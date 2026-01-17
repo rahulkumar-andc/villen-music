@@ -1,0 +1,9 @@
+{
+  "name": "villen",
+  "version": "1.0.0",
+  "description": "VILLEN Personal Music Player",
+  "main": "main.js",
+  "scripts": {
+    "start": "ELECTRON_DISABLE_SANDBOX=1 electron ."
+  }
+}
