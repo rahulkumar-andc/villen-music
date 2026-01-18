@@ -62,6 +62,12 @@
           </svg>
           <span>Recent</span>
         </div>
+        <div class="nav-item" data-section="offline" onclick="showSection('offline'), loadOfflineSongs()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
+          </svg>
+          <span>Downloads</span>
+        </div>
         <div class="nav-item" data-section="liked" onclick="showSection('liked')">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -82,6 +88,13 @@
               d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
           </svg>
           <span>Timer</span>
+        </div>
+        <div class="nav-item" id="authNavBtn" onclick="toggleAuthModal()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+          </svg>
+          <span id="authBtnText">Login</span>
         </div>
       </div>
     </nav>
@@ -158,6 +171,17 @@
           <div id="recentContainer"></div>
         </div>
       </section>
+
+      <!-- Offline/Downloads Section -->
+      <section id="offlineSection" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">⬇️ Downloaded Songs</h2>
+            <span class="see-all" onclick="loadOfflineSongs()">Refresh</span>
+          </div>
+          <div id="offlineContainer"></div>
+        </div>
+      </section>
     </main>
 
     <!-- Right Panel -->
@@ -167,7 +191,7 @@
           <span class="icon">🎵</span> Currently Playing
         </h3>
         <div class="header-icons">
-          <button class="header-icon-btn" data-tooltip="Theme" onclick="toggleTheme()">🌙</button>
+          <button class="header-icon-btn" data-tooltip="Theme" onclick="showThemesModal()">🎨</button>
           <button class="header-icon-btn" data-tooltip="Timer" onclick="showTimerModal()">⏰</button>
           <button class="header-icon-btn" data-tooltip="Shortcuts" onclick="showShortcutsModal()">⌨️</button>
         </div>
@@ -437,6 +461,41 @@
         <div class="timer-option" onclick="setSleepTimer(0)">Off</div>
       </div>
       <p id="timerStatus" style="margin-top: 16px; font-size: 12px; color: var(--text-muted);"></p>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="auth-modal" onclick="closeAuthModal(event)" style="display: none;">
+    <div class="auth-content" onclick="event.stopPropagation()">
+      <h2 id="authTitle">Login</h2>
+      <form id="authForm" onsubmit="handleAuthSubmit(event)">
+        <input type="text" id="authUsername" placeholder="Username" required>
+        <input type="password" id="authPassword" placeholder="Password" required>
+        <input type="email" id="authEmail" placeholder="Email (Register only)" style="display: none;">
+        <button type="submit" id="authSubmitBtn">Login</button>
+      </form>
+      <p id="authSwitch" onclick="switchAuthMode()">Don't have an account? Register</p>
+      <p id="authMessage" style="color: var(--color-accent); font-size: 13px; margin-top: 10px;"></p>
+    </div>
+  </div>
+
+  <p id="authMessage" style="color: var(--color-accent); font-size: 13px; margin-top: 10px;"></p>
+  </div>
+  </div>
+
+  <!-- Themes Modal -->
+  <div id="themesModal" class="timer-modal" onclick="closeThemesModal(event)">
+    <div class="timer-content" onclick="event.stopPropagation()">
+      <h2>🎨 Select Theme</h2>
+      <div class="timer-options" style="grid-template-columns: 1fr 1fr;">
+        <div class="timer-option" onclick="setTheme('default')" style="border-left: 4px solid #9d4edd">Default</div>
+        <div class="timer-option" onclick="setTheme('theme-ocean')" style="border-left: 4px solid #00f2ff">Ocean</div>
+        <div class="timer-option" onclick="setTheme('theme-crimson')" style="border-left: 4px solid #ff1e1e">Crimson
+        </div>
+        <div class="timer-option" onclick="setTheme('theme-emerald')" style="border-left: 4px solid #2eff5f">Emerald
+        </div>
+        <div class="timer-option" onclick="setTheme('theme-gold')" style="border-left: 4px solid #ffd700">Gold</div>
+      </div>
     </div>
   </div>
 

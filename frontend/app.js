@@ -5,6 +5,7 @@
  */
 
 // const API_BASE = 'http://127.0.0.1:8000/api';
+const { ipcRenderer } = require('electron');
 const API_BASE = "https://villen-music.onrender.com/api";
 // ==================== STATE ====================
 const state = {
@@ -18,6 +19,17 @@ const state = {
     volume: parseFloat(localStorage.getItem('volume') || '0.7'),
     shuffle: false,
     repeat: 'off', // off, all, one
+
+    // Auth State
+    user: JSON.parse(localStorage.getItem('user') || 'null'),
+    // Auth State
+    user: JSON.parse(localStorage.getItem('user') || 'null'),
+    token: localStorage.getItem('token') || null,
+
+    // Offline State
+    offlineSongs: [],
+
+
     trendingIndex: 0,
     trending: [],
     sleepTimer: null,
@@ -713,6 +725,9 @@ function updateCurrentlyPlayingCard() {
         <div class="now-playing-title">${song.title || 'Unknown'}</div>
         <div class="now-playing-artist">${song.artist || 'Unknown Artist'}</div>
         <div class="now-playing-meta">${song.album || ''} ${song.year ? '• ' + song.year : ''}</div>
+        <button class="control-btn" style="margin-top: 10px; font-size: 12px; padding: 5px 10px;" onclick="downloadSong(state.currentSong)">
+            ⬇ Download
+        </button>
     `;
 }
 
@@ -949,6 +964,11 @@ function renderSongGrid(songs, title = '') {
             <button class="play-btn" onclick="event.stopPropagation(); playSong(${JSON.stringify(song).replace(/"/g, '&quot;')})">${svgIcons.play}</button>
             <div class="song-title">${song.title}</div>
             <div class="song-artist">${song.artist}</div>
+            <button class="control-btn" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.5); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border:none; color:white; opacity:0; transition:opacity 0.2s;"
+                    onclick="event.stopPropagation(); downloadSong(${JSON.stringify(song).replace(/"/g, '&quot;')})"
+                    onmouseover="this.parentElement.querySelector('.control-btn').style.opacity=1">
+               ⬇
+            </button>
           </div>
         `).join('')}
       </div>
@@ -973,6 +993,11 @@ function renderSongList(songs) {
                     data-song-id="${song.id}"
                     onclick="event.stopPropagation(); toggleLike(${JSON.stringify(song).replace(/"/g, '&quot;')})">
               ${isLiked(song.id) ? svgIcons.heartFilled : svgIcons.heart}
+            </button>
+            <button class="control-btn" style="background:transparent; border:none; color:var(--text-muted);"
+                    onclick="event.stopPropagation(); downloadSong(${JSON.stringify(song).replace(/"/g, '&quot;')})"
+                    title="Download">
+               ⬇
             </button>
           </div>
         </div>
@@ -1276,4 +1301,362 @@ async function init() {
 }
 
 // Start app
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    initTheme();
+});
+
+// ==================== AUTHENTICATION ====================
+let isLoginMode = true;
+
+function toggleAuthModal() {
+    if (state.user) {
+        if (confirm("Logout from " + state.user.username + "?")) {
+            logout();
+        }
+    } else {
+        document.getElementById('authModal').style.display = 'flex';
+        setTimeout(() => document.getElementById('authModal').classList.add('visible'), 10);
+    }
+}
+
+function closeAuthModal(event) {
+    if (event.target === document.getElementById('authModal')) {
+        document.getElementById('authModal').classList.remove('visible');
+        setTimeout(() => document.getElementById('authModal').style.display = 'none', 300);
+    }
+}
+
+function switchAuthMode() {
+    isLoginMode = !isLoginMode;
+    const title = document.getElementById('authTitle');
+    const emailInfo = document.getElementById('authEmail');
+    const btn = document.getElementById('authSubmitBtn');
+    const switchTxt = document.getElementById('authSwitch');
+
+    if (isLoginMode) {
+        title.innerText = 'Login';
+        emailInfo.style.display = 'none';
+        btn.innerText = 'Login';
+        switchTxt.innerText = "Don't have an account? Register";
+    } else {
+        title.innerText = 'Register';
+        emailInfo.style.display = 'block';
+        btn.innerText = 'Register';
+        switchTxt.innerText = "Already have an account? Login";
+    }
+}
+
+async function handleAuthSubmit(e) {
+    e.preventDefault();
+    const username = document.getElementById('authUsername').value;
+    const password = document.getElementById('authPassword').value;
+    const email = document.getElementById('authEmail').value;
+    const msg = document.getElementById('authMessage');
+
+    try {
+        msg.innerText = "Processing...";
+
+        let success = false;
+        if (isLoginMode) {
+            success = await login(username, password);
+        } else {
+            success = await register(username, email, password);
+        }
+
+        if (success) {
+            msg.innerText = "Success! Closing...";
+            setTimeout(() => {
+                document.getElementById('authModal').classList.remove('visible');
+                document.getElementById('authModal').style.display = 'none';
+                updateAuthUI();
+            }, 1000);
+        }
+    } catch (error) {
+        msg.innerText = error.message || "Error occurred";
+    }
+}
+
+async function login(username, password) {
+    const res = await fetch(`${API_BASE}/auth/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Login failed");
+
+    localStorage.setItem('token', data.access);
+    localStorage.setItem('refresh_token', data.refresh);
+    state.token = data.access;
+
+    state.user = { username };
+    localStorage.setItem('user', JSON.stringify(state.user));
+
+    showToast(`Welcome back, ${username}!`);
+    await syncLikes();
+    return true;
+}
+
+async function register(username, email, password) {
+    const res = await fetch(`${API_BASE}/auth/register/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(JSON.stringify(data) || "Registration failed");
+
+    return await login(username, password);
+}
+
+function logout() {
+    state.user = null;
+    state.token = null;
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+
+    updateAuthUI();
+    showToast("Logged out");
+}
+
+function updateAuthUI() {
+    const btn = document.getElementById('authNavBtn');
+    const txt = document.getElementById('authBtnText');
+
+    if (state.user) {
+        txt.innerText = state.user.username;
+        btn.classList.add('active');
+    } else {
+        txt.innerText = "Login";
+        btn.classList.remove('active');
+    }
+}
+
+// ==================== SYNC LOGIC ====================
+async function syncLikes() {
+    if (!state.user || !state.token) return;
+
+    try {
+        showToast("Syncing library...");
+
+        const res = await fetch(`${API_BASE}/user/likes/`, {
+            headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        if (!res.ok) return;
+
+        const cloudLikes = await res.json();
+
+        const cloudIds = new Set(cloudLikes.map(l => l.song_id));
+        const localOnly = state.liked.filter(s => !cloudIds.has(s.id));
+
+        for (const song of localOnly) {
+            await fetch(`${API_BASE}/user/likes/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify({
+                    song_id: song.id,
+                    title: song.title,
+                    artist: song.artist,
+                    image: song.image,
+                    duration: song.duration
+                })
+            });
+        }
+
+        const merged = [...cloudLikes.map(l => ({
+            id: l.song_id,
+            title: l.title,
+            artist: l.artist,
+            image: l.image,
+            duration: l.duration
+        })), ...localOnly];
+
+        const seen = new Set();
+        const uniqueMerged = [];
+        for (const s of merged) {
+            if (!seen.has(s.id)) {
+                seen.add(s.id);
+                uniqueMerged.push(s);
+            }
+        }
+
+        state.liked = uniqueMerged;
+        localStorage.setItem('liked', JSON.stringify(state.liked));
+        updateLikeButtons();
+
+        showToast("Library synced!");
+
+    } catch (e) {
+        console.error("Sync failed", e);
+    }
+}
+
+const originalToggleLike = toggleLike;
+toggleLike = async function (song) {
+    if (!song) return;
+
+    const index = state.liked.findIndex(s => s.id === song.id);
+    if (index > -1) {
+        state.liked.splice(index, 1);
+        showToast(`Removed from Liked Songs`);
+    } else {
+        state.liked.unshift(song);
+        showToast(`Added to Liked Songs`);
+    }
+    localStorage.setItem('liked', JSON.stringify(state.liked));
+    updateLikeButtons();
+
+    if (state.user && state.token) {
+        const isLikedNow = state.liked.some(s => s.id === song.id);
+        if (isLikedNow) {
+            fetch(`${API_BASE}/user/likes/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify({
+                    song_id: song.id,
+                    title: song.title,
+                    artist: song.artist,
+                    image: song.image,
+                    duration: song.duration
+                })
+            });
+        } else {
+            fetch(`${API_BASE}/user/likes/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify({ song_id: song.id })
+            });
+        }
+    }
+}
+
+// ==================== THEMES ====================
+function showThemesModal() {
+    document.getElementById('themesModal').classList.add('show');
+}
+
+function closeThemesModal(event) {
+    if (event.target === document.getElementById('themesModal')) {
+        document.getElementById('themesModal').classList.remove('show');
+    }
+}
+
+function setTheme(themeName) {
+    const body = document.body;
+    // Remove all theme classes
+    body.classList.remove('theme-ocean', 'theme-crimson', 'theme-emerald', 'theme-gold');
+
+    // Add new theme class if not default
+    if (themeName !== 'default') {
+        body.classList.add(themeName);
+    }
+
+    // Save to local storage
+    localStorage.setItem('theme', themeName);
+    showToast(`Theme set to ${themeName.replace('theme-', '').toUpperCase() || 'Default'}`);
+
+    document.getElementById('themesModal').classList.remove('show');
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'default';
+    setTheme(savedTheme);
+}
+
+// ==================== OFFLINE MODE ====================
+async function downloadSong(song) {
+    if (!song || !song.url) {
+        // If we don't have URL in object (e.g. from search result), fetch it first
+        const url = await getStreamUrl(song.id);
+        if (!url) {
+            showToast('Download failed: Stream not available');
+            return;
+        }
+        song.url = url;
+    }
+
+    try {
+        const filename = `${song.artist} - ${song.title}.mp3`.replace(/[<>:"/\\|?*]+/g, ''); // Sanitize
+        showToast(`Downloading: ${song.title}...`);
+
+        await ipcRenderer.invoke('download-song', {
+            url: song.url,
+            filename: filename
+        });
+
+        showToast(`Downloaded: ${song.title}`);
+        loadOfflineSongs(); // Refresh list
+    } catch (e) {
+        showToast('Download failed: ' + e);
+    }
+}
+
+async function loadOfflineSongs() {
+    try {
+        const files = await ipcRenderer.invoke('get-offline-songs');
+
+        state.offlineSongs = files.map(f => {
+            // Parse filename "Artist - Title.mp3"
+            const name = f.filename.replace('.mp3', '');
+            const parts = name.split(' - ');
+            const artist = parts.length > 1 ? parts[0] : 'Unknown Artist';
+            const title = parts.length > 1 ? parts.slice(1).join(' - ') : name;
+
+            return {
+                id: 'local_' + f.filename,
+                title: title,
+                artist: artist,
+                image: '', // No image for local files yet, unless we read ID3
+                url: 'file://' + f.path,
+                isLocal: true,
+                duration: 0 // Unknown without metadata read
+            };
+        });
+
+        renderOfflineSongs();
+    } catch (e) {
+        console.error("Failed to load offline songs", e);
+    }
+}
+
+function renderOfflineSongs() {
+    const container = document.getElementById('offlineContainer');
+    if (!container) return; // UI element might not exist yet
+
+    if (state.offlineSongs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No downloaded songs</div>';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="songs-list">
+            ${state.offlineSongs.map((song, i) => `
+                <div class="song-row" onclick="playSong(${JSON.stringify(song).replace(/"/g, '&quot;')})">
+                    <div class="index">${i + 1}</div>
+                    <div class="thumb" style="background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;">🎵</div>
+                    <div class="info">
+                        <div class="title">${song.title}</div>
+                        <div class="artist">${song.artist}</div>
+                    </div>
+                    <div class="duration">Local</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Init Offline
+loadOfflineSongs();
