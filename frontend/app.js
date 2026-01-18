@@ -144,10 +144,29 @@ async function playSong(song, addToQueue = true) {
     addToRecentlyPlayed(song);
 
     if (addToQueue) {
+        // Reset queue for new context (optional, but cleaner for "Play" from search)
+        // If we want to append to existing queue, we keep it. 
+        // But user complaint implies "starting a song" should start a radio.
+        // Let's keep existing logic but append related.
         state.queue = state.queue.slice(0, state.queueIndex + 1);
         state.queue.push(song);
         state.queueIndex = state.queue.length - 1;
         updateQueueUI();
+
+        // Auto-populate queue with related songs
+        getRelated(song.id).then(related => {
+            if (related && related.length > 0) {
+                const existingIds = new Set(state.queue.map(s => s.id));
+                const newSongs = related.filter(s => !existingIds.has(s.id));
+
+                if (newSongs.length > 0) {
+                    state.queue.push(...newSongs);
+                    updateQueueUI();
+                    updateNextSongsList();
+                    // showToast(`Added ${newSongs.length} similar songs to queue`);
+                }
+            }
+        });
     }
 
     audio.src = url;
