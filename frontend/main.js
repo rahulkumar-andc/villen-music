@@ -10,6 +10,11 @@ autoUpdater.logger.transports.file.level = "info";
 
 let mainWindow;
 
+// Disable sandbox on Linux to avoid crash
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox');
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -21,6 +26,9 @@ function createWindow() {
   });
 
   mainWindow.loadFile("index.html");
+
+  // Open DevTools for debugging (remove in production)
+  mainWindow.webContents.openDevTools();
 
   // 2. Window banne ke baad update check karo
   mainWindow.once('ready-to-show', () => {

@@ -15,7 +15,8 @@
     "build": "electron-builder",
     "build:linux": "electron-builder --linux",
     "build:win": "electron-builder --win",
-    "build:all": "electron-builder --linux --win"
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --linux --win --mac"
   },
   "dependencies": {
     "electron-log": "^5.4.3",
@@ -27,7 +28,7 @@
   },
   "build": {
     "appId": "com.villen.music",
-    "productName": "VILLEN Music",
+    "productName": "VillenMusic",
     "directories": {
       "output": "dist"
     },
@@ -65,6 +66,12 @@
           ]
         }
       ]
+    },
+    "mac": {
+      "target": [
+        "zip"
+      ],
+      "category": "public.app-category.music"
     }
   }
 }
