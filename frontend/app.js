@@ -277,7 +277,7 @@ function renderRecentlyPlayed() {
         <div class="recently-played-scroll">
             ${state.recentlyPlayed.map(song => `
                 <div class="recently-played-card" onclick="playSong(${JSON.stringify(song).replace(/"/g, '&quot;')})" oncontextmenu="showContextMenu(event, ${JSON.stringify(song).replace(/"/g, '&quot;')})">
-                    <img class="recently-played-image" src="${song.image || ''}" alt="" onerror="this.style.background='var(--bg-tertiary)'">
+                    <img class="recently-played-image" src="${song.image || ''}" alt="" loading="lazy" onerror="this.style.background='var(--bg-tertiary)'">
                     <div class="recently-played-title">${song.title}</div>
                     <div class="recently-played-artist">${song.artist}</div>
                 </div>
@@ -712,7 +712,7 @@ function updateNextSongsList() {
 
     container.innerHTML = nextSongs.map((song, i) => `
         <div class="next-song-item" onclick="playFromQueue(${state.queueIndex + 1 + i})" oncontextmenu="showContextMenu(event, ${JSON.stringify(song).replace(/"/g, '&quot;')})">
-            <img class="next-song-thumb" src="${song.image || ''}" alt="" onerror="this.style.background='var(--bg-tertiary)'">
+            <img class="next-song-thumb" src="${song.image || ''}" alt="" loading="lazy" onerror="this.style.background='var(--bg-tertiary)'">
             <div class="next-song-info">
                 <div class="next-song-title">${song.title}</div>
                 <div class="next-song-artist">${song.artist}</div>
@@ -720,6 +720,9 @@ function updateNextSongsList() {
             <span class="next-song-duration">${formatTime(song.duration)}</span>
         </div>
     `).join('');
+
+    // Efficient DOM update
+    container.innerHTML = html;
 }
 
 function updatePlayButton() {
@@ -789,7 +792,7 @@ function updateQueueUI() {
     container.innerHTML = state.queue.map((song, i) => `
     <div class="song-row ${i === state.queueIndex ? 'playing' : ''}" onclick="playFromQueue(${i})" oncontextmenu="showContextMenu(event, ${JSON.stringify(song).replace(/"/g, '&quot;')})">
       <span class="index">${i + 1}</span>
-      <img class="thumb" src="${song.image || ''}" alt="" onerror="this.style.background='var(--bg-tertiary)'">
+      <img class="thumb" src="${song.image || ''}" alt="" loading="lazy" onerror="this.style.background='var(--bg-tertiary)'">
       <div class="info">
         <div class="title">${song.title}</div>
         <div class="artist">${song.artist}</div>

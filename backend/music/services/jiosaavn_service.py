@@ -14,6 +14,7 @@ import logging
 from typing import Optional, Dict, List, Any
 
 import requests
+from django.core.cache import cache
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -46,9 +47,6 @@ class JioSaavnService:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("https://", adapter)
 
-        # Simple TTL cache
-        self._cache: Dict[str, tuple] = {}
-
     # --------------------
     # VALIDATION & CACHING
     # --------------------
@@ -59,17 +57,12 @@ class JioSaavnService:
         return bool(self.ID_PATTERN.match(item_id))
 
     def _get_cached(self, key: str) -> Optional[Any]:
-        """Get data from cache if not expired."""
-        if key in self._cache:
-            data, timestamp = self._cache[key]
-            if time.time() - timestamp < self.CACHE_TTL:
-                return data
-            del self._cache[key]
-        return None
+        """Get data from cache."""
+        return cache.get(key)
 
     def _set_cache(self, key: str, data: Any):
-        """Cache data with timestamp."""
-        self._cache[key] = (data, time.time())
+        """Cache data with standard TTL."""
+        cache.set(key, data, timeout=self.CACHE_TTL)
 
     def _api_get(self, endpoint: str, params: dict = None) -> Optional[Dict]:
         """Make authenticated API GET request."""
@@ -380,15 +373,14 @@ class JioSaavnService:
     # --------------------
     def clear_cache(self):
         """Clear the data cache."""
-        self._cache.clear()
+        cache.clear()
         logger.info("Cache cleared")
 
     def cache_stats(self) -> Dict:
         """Get cache statistics."""
-        now = time.time()
-        valid = sum(1 for _, (_, ts) in self._cache.items() if now - ts < self.CACHE_TTL)
+        # Django cache backend agnostic stats are limited
         return {
-            "total_entries": len(self._cache),
-            "valid_entries": valid,
+            "status": "active",
+            "backend": str(cache.__class__.__name__),
             "ttl_seconds": self.CACHE_TTL,
         }
