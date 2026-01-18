@@ -11,8 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ev95r#lyx)(6$7f(n^(-4c36k_$y1tz-d%rnfq=c#5k2dozzsk')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-ALLOWED_HOSTS.append('.onrender.com')
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -107,7 +106,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # For Electron apps (file:// protocol)
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development!
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_METHODS = [
     "GET",
