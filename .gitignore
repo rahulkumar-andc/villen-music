@@ -119,3 +119,17 @@ coverage/
 # !frontend/dist/*.AppImage
 # !frontend/dist/*.deb  
 # !frontend/dist/*.exe
+
+# -----------------
+# Mobile App (Capacitor)
+# -----------------
+mobileapp/node_modules/
+mobileapp/android-sdk/
+mobileapp/android/.gradle/
+mobileapp/android/build/
+mobileapp/android/app/build/
+mobileapp/android/capacitor-*/build/
+mobileapp/android/local.properties
+mobileapp/*.apk
+mobileapp/*.keystore
+mobileapp/VillenMusic-*.apk
