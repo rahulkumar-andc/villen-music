@@ -19,8 +19,8 @@ const state = {
     shuffle: false,
     repeat: 'off', // off, all, one
 
-    // Auth State
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
+    isLoading: false,
+
     // Auth State
     user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token') || null,
@@ -156,7 +156,9 @@ async function getLyrics(songId) {
 // ==================== PLAYBACK ====================
 async function playSong(song, addToQueue = true) {
     if (!song || !song.id) return;
+    if (state.isLoading) return; // Prevent multiple clicks/loops
 
+    state.isLoading = true;
     showToast(`Loading: ${song.title}`);
 
     const url = await getStreamUrl(song.id);
@@ -208,8 +210,8 @@ async function playSong(song, addToQueue = true) {
     updateNowPlaying();
     updateCurrentlyPlayingCard();
     updateNextSongsList();
-    updateAlbumBackground(song);
     fetchAndDisplayLyrics(song.id);
+    state.isLoading = false;
 }
 
 function togglePlay() {
@@ -247,7 +249,45 @@ function playNext() {
     }
 
     playSong(state.queue[state.queueIndex], false);
-}
+}// ==================== AUDIO PLAYER ====================
+const audio = new Audio();
+audio.crossOrigin = 'anonymous'; // Enable CORS for mobile WebView
+audio.volume = state.volume;
+
+// Error handling for audio
+audio.addEventListener('error', (e) => {
+    console.error('Audio error:', e);
+    const errorMessages = {
+        1: 'Audio loading aborted',
+        2: 'Network error',
+        3: 'Audio decoding failed',
+        4: 'Audio not supported'
+    };
+    const code = audio.error ? audio.error.code : 0;
+    showToast(errorMessages[code] || 'Playback error - trying again...');
+});
+
+// Audio context for visualizer
+let audioContext = null;
+let analyser = null;
+let visualizerAnimationId = null;
+
+audio.addEventListener('timeupdate', updateProgress);
+audio.addEventListener('ended', handleSongEnd);
+audio.addEventListener('loadedmetadata', updateDuration);
+audio.addEventListener('play', () => {
+    state.isPlaying = true;
+    updatePlayButton();
+    updateMediaSession();
+    startVisualizer();
+});
+audio.addEventListener('pause', () => {
+    state.isPlaying = false;
+    updatePlayButton();
+    stopVisualizer();
+});
+
+
 
 function playPrevious() {
     if (audio.currentTime > 3) {
@@ -260,6 +300,13 @@ function playPrevious() {
 }
 
 function handleSongEnd() {
+    // Prevent loop if song ended repeatedly without playing (e.g. error causing immediate end)
+    if (audio.currentTime < 2 && audio.duration > 0) {
+        console.warn('Song ended too quickly, preventing loop');
+        state.isPlaying = false;
+        updatePlayButton();
+        return;
+    }
     playNext();
 }
 
