@@ -109,4 +109,58 @@ def trending_songs(request):
 @require_GET
 def cache_stats(request):
     """Get cache statistics (debug endpoint)."""
-    return JsonResponse(service.cache_stats())
+
+# --------------------
+# AUTHENTICATION & SYNC (DRF)
+# --------------------
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+
+from .models import LikedSong
+from .serializers.auth_serializers import UserRegisterSerializer, LikedSongSerializer
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserRegisterSerializer
+
+class ManageLikesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get all liked songs for the user."""
+        likes = LikedSong.objects.filter(user=request.user).order_by('-created_at')
+        serializer = LikedSongSerializer(likes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Sync a liked song (add if not exists)."""
+        data = request.data.copy()
+        
+        # Validation checks
+        if not data.get('song_id'):
+            return Response({"error": "song_id required"}, status=400)
+
+        # Update or create logic to prevent duplicates
+        obj, created = LikedSong.objects.update_or_create(
+            user=request.user,
+            song_id=data['song_id'],
+            defaults={
+                'title': data.get('title', 'Unknown'),
+                'artist': data.get('artist', 'Unknown'),
+                'image': data.get('image', ''),
+                'duration': data.get('duration', 0)
+            }
+        )
+        return Response({"status": "synced", "created": created}, status=200)
+
+    def delete(self, request):
+        """Remove a liked song."""
+        song_id = request.data.get('song_id') or request.query_params.get('song_id')
+        if not song_id:
+             return Response({"error": "song_id required"}, status=400)
+        
+        LikedSong.objects.filter(user=request.user, song_id=song_id).delete()
+        return Response({"status": "removed"}, status=200)

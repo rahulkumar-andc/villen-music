@@ -1,4 +1,6 @@
 from django.urls import path
+from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 
 urlpatterns = [
@@ -20,4 +22,10 @@ urlpatterns = [
     
     # Debug
     path("cache/stats/", views.cache_stats, name="cache_stats"),
+
+    # Auth & Sync
+    path("auth/register/", views.RegisterView.as_view(), name="register"),
+    path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("user/likes/", views.ManageLikesView.as_view(), name="manage_likes"),
 ]
