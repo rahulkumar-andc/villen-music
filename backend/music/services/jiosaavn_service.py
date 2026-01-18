@@ -20,11 +20,10 @@ from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
-
 class JioSaavnService:
     BASE_URL = "https://jiosavan-api-pi.vercel.app/api"
     TIMEOUT = 10
-    CACHE_TTL = 300  # 5 minutes
+    CACHE_TTL = 3600  # 1 hour
 
     # Valid ID pattern (alphanumeric, typically 4-20 chars)
     ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{2,30}$")
@@ -63,6 +62,25 @@ class JioSaavnService:
     def _set_cache(self, key: str, data: Any):
         """Cache data with standard TTL."""
         cache.set(key, data, timeout=self.CACHE_TTL)
+        
+    def _cache_songs_from_list(self, songs: list):
+        """Optimistically cache individual songs from a list response."""
+        if not songs:
+            return
+            
+        count = 0
+        for song in songs:
+            song_id = song.get("id")
+            # Only cache if we have ID and crucial data (downloadUrl or encrypted_media_url)
+            if song_id and (song.get("downloadUrl") or song.get("more_info", {}).get("encrypted_media_url")):
+                cache_key = f"song:{song_id}"
+                # Don't overwrite existing full details if we only have partial, 
+                # but search results usually have everything needed for stream.
+                self._set_cache(cache_key, song)
+                count += 1
+        
+        if count > 0:
+            logger.info(f"Optimistically cached {count} songs")
 
     def _api_get(self, endpoint: str, params: dict = None) -> Optional[Dict]:
         """Make authenticated API GET request."""
@@ -85,12 +103,23 @@ class JioSaavnService:
         """Search for songs with enhanced metadata."""
         if not query or not query.strip():
             return []
+            
+        # Check cache for query
+        cache_key = f"search:{query.strip().lower()}:{limit}"
+        cached = self._get_cached(cache_key)
+        if cached:
+            return cached
 
         data = self._api_get("search/songs", {"query": query.strip(), "limit": limit})
         if not data:
             return []
+            
+        raw_results = data.get("data", {}).get("results", [])
+        self._cache_songs_from_list(raw_results)
 
-        return self._normalize_search(data)
+        results = self._normalize_search(data)
+        self._set_cache(cache_key, results)
+        return results
 
     # --------------------
     # STREAM WITH QUALITY FALLBACK
@@ -201,6 +230,10 @@ class JioSaavnService:
             return None
 
         album_data = data.get("data", {})
+        
+        # Optimistically cache songs in the album
+        self._cache_songs_from_list(album_data.get("songs", []))
+        
         result = {
             "id": album_data.get("id"),
             "name": album_data.get("name"),
@@ -233,6 +266,10 @@ class JioSaavnService:
             return None
 
         artist_data = data.get("data", {})
+        
+        # Optimistically cache top songs
+        self._cache_songs_from_list(artist_data.get("topSongs", []))
+        
         result = {
             "id": artist_data.get("id"),
             "name": artist_data.get("name"),
@@ -275,7 +312,9 @@ class JioSaavnService:
         candidates = []
         data = self._api_get(f"songs/{song_id}/suggestions", {"limit": limit * 2}) # Fetch more to filter
         if data and data.get("success"):
-             candidates = [self._normalize_song(s) for s in data.get("data", [])]
+             raw_candidates = data.get("data", [])
+             self._cache_songs_from_list(raw_candidates)
+             candidates = [self._normalize_song(s) for s in raw_candidates]
 
         # 3. Filter and Rank
         filtered = []
@@ -331,6 +370,7 @@ class JioSaavnService:
             
             if trending:
                 songs = trending.get("data", [])
+                self._cache_songs_from_list(songs)
                 result = [self._normalize_song(s) for s in songs if s.get("type") == "song"]
                 if result:
                     self._set_cache(cache_key, result)

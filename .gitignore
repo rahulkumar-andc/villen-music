@@ -133,3 +133,5 @@ mobileapp/android/local.properties
 mobileapp/*.apk
 mobileapp/*.keystore
 mobileapp/VillenMusic-*.apk
+mobileapp/*.idsig
+backend/check_api_response.py

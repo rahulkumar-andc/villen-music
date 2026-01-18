@@ -45,7 +45,7 @@ const CACHE_DURATION = 5 * 60 * 1000;
 
 // ==================== AUDIO PLAYER ====================
 const audio = new Audio();
-audio.crossOrigin = 'anonymous'; // Enable CORS for mobile WebView
+// audio.crossOrigin = 'anonymous'; // Disabled to allow playback from non-CORS CDNs
 audio.volume = state.volume;
 
 // Error handling for audio
@@ -249,43 +249,7 @@ function playNext() {
     }
 
     playSong(state.queue[state.queueIndex], false);
-}// ==================== AUDIO PLAYER ====================
-const audio = new Audio();
-audio.crossOrigin = 'anonymous'; // Enable CORS for mobile WebView
-audio.volume = state.volume;
-
-// Error handling for audio
-audio.addEventListener('error', (e) => {
-    console.error('Audio error:', e);
-    const errorMessages = {
-        1: 'Audio loading aborted',
-        2: 'Network error',
-        3: 'Audio decoding failed',
-        4: 'Audio not supported'
-    };
-    const code = audio.error ? audio.error.code : 0;
-    showToast(errorMessages[code] || 'Playback error - trying again...');
-});
-
-// Audio context for visualizer
-let audioContext = null;
-let analyser = null;
-let visualizerAnimationId = null;
-
-audio.addEventListener('timeupdate', updateProgress);
-audio.addEventListener('ended', handleSongEnd);
-audio.addEventListener('loadedmetadata', updateDuration);
-audio.addEventListener('play', () => {
-    state.isPlaying = true;
-    updatePlayButton();
-    updateMediaSession();
-    startVisualizer();
-});
-audio.addEventListener('pause', () => {
-    state.isPlaying = false;
-    updatePlayButton();
-    stopVisualizer();
-});
+}
 
 
 
@@ -1049,7 +1013,7 @@ function renderSongList(songs) {
       ${songs.map((song, i) => `
         <div class="song-row" onclick="playSong(${JSON.stringify(song).replace(/"/g, '&quot;')})" oncontextmenu="showContextMenu(event, ${JSON.stringify(song).replace(/"/g, '&quot;')})">
           <span class="index">${i + 1}</span>
-          <img class="thumb" src="${song.image || ''}" alt="" onerror="this.style.display='none'">
+          <img class="thumb" src="${song.image || ''}" alt="" loading="lazy" onerror="this.style.display='none'">
           <div class="info">
             <div class="title">${song.title}</div>
             <div class="artist">${song.artist}</div>
