@@ -2,14 +2,15 @@
 Django settings for core project.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY
-SECRET_KEY = 'django-insecure-ev95r#lyx)(6$7f(n^(-4c36k_$y1tz-d%rnfq=c#5k2dozzsk'
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ev95r#lyx)(6$7f(n^(-4c36k_$y1tz-d%rnfq=c#5k2dozzsk')
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
 # Application definition
