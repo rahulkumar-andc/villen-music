@@ -1,22 +1,33 @@
-# Node
+# ================================
+# VILLEN Music - Git Ignore
+# ================================
+
+# -----------------
+# Node.js / Electron
+# -----------------
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
-# Electron
-dist/
-out/
+# Electron Build Outputs
+frontend/dist/
+frontend/out/
+*.AppImage
+*.deb
+*.exe
+*.dmg
+*.snap
+*.rpm
 
-# OS
-.DS_Store
-Thumbs.db
+# Electron Cache
+.electron/
+electron-builder.env
 
-# Env
-.env
-.env.*
-
-# Python
+# -----------------
+# Python / Django
+# -----------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -25,17 +36,86 @@ __pycache__/
 env/
 venv/
 .venv/
+ENV/
 *.egg-info/
 .eggs/
-db.sqlite3
+*.egg
 
-# IDE
+# Django
+db.sqlite3
+*.sqlite3
+backend/staticfiles/
+backend/media/
+*.pot
+*.pyc
+
+# -----------------
+# Environment Files
+# -----------------
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+*.local
+
+# -----------------
+# IDE / Editors
+# -----------------
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
 
-# Logs
+# -----------------
+# OS Generated
+# -----------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# -----------------
+# Logs & Debug
+# -----------------
 *.log
 logs/
+debug/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -----------------
+# Docker (optional)
+# -----------------
+Dockerfile.win
+
+# -----------------
+# Misc
+# -----------------
+*.bak
+*.tmp
+*.temp
+*.cache
+.cache/
+coverage/
+.nyc_output/
+
+# -----------------
+# Build Artifacts to KEEP
+# -----------------
+# Note: If you want to include built assets in release,
+# remove 'frontend/dist/' from above and use:
+# !frontend/dist/*.AppImage
+# !frontend/dist/*.deb  
+# !frontend/dist/*.exe

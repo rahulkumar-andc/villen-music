@@ -1,0 +1,15 @@
+# Django Framework
+Django>=4.2,<7.0
+
+# CORS Headers (for Electron app)
+django-cors-headers>=4.3.0
+
+# HTTP Requests (for JioSaavn API)
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Production Server (optional)
+gunicorn>=21.0.0
+
+# Environment Variables (optional)
+python-decouple>=3.8
