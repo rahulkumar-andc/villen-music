@@ -253,23 +253,65 @@ class JioSaavnService:
     # RELATED SONGS / RECOMMENDATIONS
     # --------------------
     def get_related(self, song_id: str, limit: int = 10) -> List[Dict]:
-        """Get related songs/recommendations based on a song."""
+        """Get enhanced related songs based on language and era."""
         if not self._validate_id(song_id):
             return []
 
-        cache_key = f"related:{song_id}"
+        cache_key = f"related_v2:{song_id}:{limit}"
         cached = self._get_cached(cache_key)
         if cached:
             return cached
 
-        data = self._api_get(f"songs/{song_id}/suggestions", {"limit": limit})
-        if not data or not data.get("success"):
+        # 1. Get source song details to know language and year
+        source_song = self._fetch_song_data(song_id)
+        if not source_song:
             return []
 
-        songs = data.get("data", [])
-        result = [self._normalize_song(s) for s in songs]
-        self._set_cache(cache_key, result)
-        return result
+        lang = source_song.get("language", "").lower()
+        year = int(source_song.get("year") or 0)
+        artist = (source_song.get("primaryArtists") or "").split(',')[0].strip()
+
+        # 2. Get API Suggestions
+        candidates = []
+        data = self._api_get(f"songs/{song_id}/suggestions", {"limit": limit * 2}) # Fetch more to filter
+        if data and data.get("success"):
+             candidates = [self._normalize_song(s) for s in data.get("data", [])]
+
+        # 3. Filter and Rank
+        filtered = []
+        
+        # Strict Language Filter
+        same_lang = [s for s in candidates if s.get("language", "").lower() == lang]
+        
+        if same_lang:
+            # Era Filter (within 5 years) - Give higher score
+            scored = []
+            for s in same_lang:
+                s_year = int(s.get("year") or 0)
+                year_diff = abs(s_year - year)
+                score = 100 - year_diff # Higher is better
+                scored.append((score, s))
+            
+            scored.sort(key=lambda x: x[0], reverse=True)
+            filtered = [s for _, s in scored]
+        
+        # 4. Fallback: If not enough related songs, search by Artist + Language
+        if len(filtered) < 5 and artist and lang:
+            logger.info(f"Fallback search for related: {artist} {lang}")
+            fallback_query = f"{artist} {lang}"
+            search_results = self.search(fallback_query, limit=10)
+            
+            # Avoid duplicates
+            existing_ids = {s['id'] for s in filtered}
+            existing_ids.add(song_id)
+            
+            for s in search_results:
+                if s['id'] not in existing_ids and s.get("language", "").lower() == lang:
+                     filtered.append(s)
+
+        results = filtered[:limit]
+        self._set_cache(cache_key, results)
+        return results
 
     # --------------------
     # TRENDING SONGS
