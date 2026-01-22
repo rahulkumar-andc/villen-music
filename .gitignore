@@ -121,17 +121,12 @@ coverage/
 # !frontend/dist/*.exe
 
 # -----------------
-# Mobile App (Capacitor)
+# Mobile App (Flutter)
 # -----------------
-mobileapp/node_modules/
-mobileapp/android-sdk/
-mobileapp/android/.gradle/
-mobileapp/android/build/
-mobileapp/android/app/build/
-mobileapp/android/capacitor-*/build/
-mobileapp/android/local.properties
-mobileapp/*.apk
-mobileapp/*.keystore
-mobileapp/VillenMusic-*.apk
-mobileapp/*.idsig
+villen_music_flutter/build/
+villen_music_flutter/.dart_tool/
+villen_music_flutter/.flutter-plugins
+villen_music_flutter/.flutter-plugins-dependencies
+villen_music_flutter/.pub-cache/
+villen_music_flutter/.pub/
 backend/check_api_response.py

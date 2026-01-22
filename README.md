@@ -65,6 +65,13 @@ npm install
 npm start
 ```
 
+### Mobile App Setup (Flutter)
+```bash
+cd villen_music_flutter
+flutter pub get
+flutter run
+```
+
 ## ⌨️ Keyboard Shortcuts
 
 | Key | Action |
@@ -102,6 +109,11 @@ Villen/
     ├── app.js          # Core logic (900+ lines)
     ├── main.js         # Electron entry
     └── package.json
+
+└── villen_music_flutter/
+    ├── lib/            # Flutter App Source
+    ├── android/        # Android Native Code
+    └── ios/            # iOS Native Code
 ```
 
 ## 🔌 API Endpoints
@@ -125,6 +137,12 @@ Villen/
 - Django
 - Django REST Framework
 - JioSaavn API Integration
+
+**Mobile:**
+- Flutter (Dart)
+- Just Audio
+- Dio (Networking)
+
 
 ## 📝 License
 
