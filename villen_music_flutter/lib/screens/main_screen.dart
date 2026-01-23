@@ -12,6 +12,7 @@ import 'package:villen_music/screens/home_screen.dart';
 import 'package:villen_music/screens/library_screen.dart';
 import 'package:villen_music/screens/settings_screen.dart';
 import 'package:villen_music/widgets/mini_player.dart';
+import 'package:villen_music/services/update_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -36,7 +37,38 @@ class _MainScreenState extends State<MainScreen> {
     // Delay slightly to ensure providers are ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initAudioListeners();
+      _checkForUpdates();
     });
+  }
+
+  Future<void> _checkForUpdates() async {
+    final updateService = UpdateService();
+    final info = await updateService.checkForUpdate();
+    
+    if (info.hasUpdate && mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Update Available'),
+          content: Text('Version ${info.latestVersion} is available.\n\nUpdate now for new features and improvements!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Later'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                if (info.releaseUrl != null) {
+                  updateService.launchUpdateUrl(info.releaseUrl!);
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      );
+    }
   }
   
   void _initAudioListeners() {
