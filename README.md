@@ -1,152 +1,136 @@
 # 🎧 VILLEN Music Player
 
-A premium personal music player with a stunning dark purple/magenta theme, built with Electron and powered by a Django backend.
+A premium personal music ecosystem featuring a diverse tech stack:
+- **Backend:** Django (Python) - Robust API & Authentication
+- **Frontend:** Electron (JS) - Glassmorphism Desktop Player
+- **Mobile:** Flutter (Dart) - High-performance Android/iOS App
 
 ![VILLEN Music Player](screenshots/main-ui.png)
 
-## 📸 Screenshots
+---
 
-### Main Interface
-![Main UI](screenshots/main-ui.png)
+## 🚀 Quick Start (Development)
 
-### Keyboard Shortcuts
-![Keyboard Shortcuts](screenshots/keyboard-shortcuts.png)
+### 1. Backend (Django)
+*The core API server required for both Frontend and Mobile.*
 
-## ✨ Features
-
-### 🎨 Premium UI
-- **Dark Purple/Magenta Theme** - Stunning glassmorphism design
-- **Animated Background** - Pulsing gradients and floating orbs
-- **Dynamic Album Blur** - Background adapts to current song
-- **Skeleton Loaders** - Smooth loading animations
-- **Micro-animations** - Hover effects and transitions
-
-### 🎵 Playback Controls
-- Play, Pause, Next, Previous
-- Shuffle & Repeat modes
-- Volume control with mute
-- Draggable progress bar
-- Gapless queue management
-
-### 📋 Library Management
-- **Trending Songs** - Discover popular tracks
-- **Top Artists** - Browse by artist
-- **Liked Songs** - Save your favorites
-- **Recently Played** - Track listening history
-- **Queue** - Manage upcoming songs
-
-### ⚡ Power Features
-- **Context Menu** - Right-click for quick actions
-- **Keyboard Shortcuts** - Full keyboard control
-- **Sleep Timer** - Auto-stop playback
-- **Audio Visualizer** - 10-bar frequency display
-- **Lyrics Panel** - View song lyrics
-- **Media Session** - OS-level controls
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 16+
-- Python 3.8+
-- npm or yarn
-
-### Backend Setup
 ```bash
 cd backend
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run migrations & server
 python manage.py migrate
 python manage.py runserver
 ```
+*Server runs at `http://127.0.0.1:8000`*
 
-### Frontend Setup
+### 2. Frontend (Desktop)
+*Electron-based desktop player for Windows/Linux.*
+
 ```bash
 cd frontend
 npm install
 npm start
 ```
 
-### Mobile App Setup (Flutter)
+### 3. Mobile (Flutter)
+*Android/iOS application.*
+
 ```bash
 cd villen_music_flutter
 flutter pub get
 flutter run
 ```
 
-## ⌨️ Keyboard Shortcuts
+---
 
-| Key | Action |
-|-----|--------|
-| `Space` | Play/Pause |
-| `Shift + →` | Next Song |
-| `Shift + ←` | Previous Song |
-| `→` | Seek Forward 10s |
-| `←` | Seek Back 10s |
-| `↑` | Volume Up |
-| `↓` | Volume Down |
-| `M` | Mute/Unmute |
-| `L` | Like Current Song |
-| `Q` | Toggle Queue |
-| `S` | Toggle Shuffle |
-| `R` | Cycle Repeat Mode |
-| `?` | Show Shortcuts |
-| `/` | Focus Search |
+## 🔄 How to Release Updates
 
-## 📁 Project Structure
+### 1. Backend Updates
+*Deploying API changes.*
+
+1.  **Commit & Push:**
+    ```bash
+    git add .
+    git commit -m "feat: new api endpoint"
+    git push origin main
+    ```
+2.  **Auto-Deploy:** If connected to Render/Heroku, pushing to `main` triggers a deploy.
+3.  **Database:** If you changed models, run migrations on the server:
+    ```bash
+    python manage.py migrate
+    ```
+
+### 2. Frontend (Desktop) with Auto-Updates
+*Building .exe (Windows) and .AppImage (Linux).*
+
+1.  **Bump Version:** Edit `frontend/package.json`:
+    ```json
+    "version": "1.0.1"
+    ```
+2.  **Build:**
+    - **Linux:** `npm run build:linux`
+    - **Windows:** Use Docker (see `frontend/UPDATE.md`) or run `npm run build:win` on a Windows machine.
+3.  **Release:**
+    - Go to [GitHub Releases](https://github.com/rahulkumar-andc/villen-music/releases).
+    - Create a new release (tag `v1.0.1`).
+    - Upload the `.exe`, `.AppImage`, and `.deb` files from `frontend/dist/`.
+
+### 3. Mobile (Android) with In-App Updater
+*Building APKs that users can auto-update.*
+
+1.  **Bump Version:** Edit `villen_music_flutter/pubspec.yaml`:
+    ```yaml
+    version: 1.0.1+2
+    ```
+2.  **Build:**
+    ```bash
+    cd villen_music_flutter
+    # Build split APKs for smaller size (recommended)
+    flutter build apk --release --split-per-abi
+    ```
+3.  **Release:**
+    - Create a new [GitHub Release](https://github.com/rahulkumar-andc/villen-music/releases) (tag `v1.0.1`).
+    - Upload the APKs (e.g., `app-arm64-v8a-release.apk`).
+    - **Magic:** The app checks this GitHub Release on startup. If a newer version exists, it prompts the user to update!
+
+---
+
+## 📂 Project Structure
 
 ```
 Villen/
-├── backend/
-│   ├── core/           # Django project settings
-│   ├── music/          # Music API app
-│   │   ├── views.py    # API endpoints
-│   │   ├── urls.py     # URL routing
-│   │   └── services/   # JioSaavn integration
+├── backend/                # Django REST API
+│   ├── core/               # Settings (CORS, JWT)
+│   ├── music/              # Music App (Models, Views)
 │   └── manage.py
 │
-└── frontend/
-    ├── index.html      # Main HTML
-    ├── styles.css      # All styles (1100+ lines)
-    ├── app.js          # Core logic (900+ lines)
-    ├── main.js         # Electron entry
-    └── package.json
-
-└── villen_music_flutter/
-    ├── lib/            # Flutter App Source
-    ├── android/        # Android Native Code
-    └── ios/            # iOS Native Code
+├── frontend/               # Electron Desktop App
+│   ├── app.js              # Player Logic
+│   ├── index.html          # UI Layout
+│   └── styles.css          # Glassmorphism Styles
+│
+└── villen_music_flutter/   # Mobile App
+    ├── lib/
+    │   ├── providers/      # State Management
+    │   ├── services/       # API & Audio Handlers
+    │   └── screens/        # UI Pages
+    └── pubspec.yaml
 ```
 
-## 🔌 API Endpoints
+## ✨ Key Features
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/search/?q=` | Search songs |
-| `GET /api/trending/` | Get trending songs |
-| `GET /api/stream/{id}/` | Get stream URL |
-| `GET /api/song/{id}/lyrics/` | Get lyrics |
-| `GET /api/song/{id}/related/` | Get related songs |
-
-## 🛠️ Tech Stack
-
-**Frontend:**
-- Electron
-- Vanilla JavaScript
-- CSS3 with Glassmorphism
-
-**Backend:**
-- Django
-- Django REST Framework
-- JioSaavn API Integration
-
-**Mobile:**
-- Flutter (Dart)
-- Just Audio
-- Dio (Networking)
-
-
-## 📝 License
-
-MIT License - feel free to use for personal projects.
+- **Premium UI:** Dark purple/magenta glassmorphism theme.
+- **Cross-Platform:** Works on Desktop (Electron) and Mobile (Flutter).
+- **Auto-Queue:** Automatically plays similar songs when the queue ends.
+- **In-App Updates:** Mobile app self-updates via GitHub.
+- **Sleep Timer:** Auto-stop playback.
+- **Lyrics & Visualizer:** Immersive playback experience.
 
 ---
 
