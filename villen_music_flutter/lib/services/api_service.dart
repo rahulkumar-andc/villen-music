@@ -156,6 +156,24 @@ class ApiService {
     }
   }
 
+
+  // ... (keep existing)
+  
+  /// Get Lyrics
+  Future<String?> getLyrics(String songId) async {
+    try {
+      final response = await _dio.get(
+        'song/$songId/lyrics/', // Path relative to baseUrl
+      );
+      if (response.data['has_lyrics'] == true) {
+        return response.data['lyrics'];
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   String _getErrorMessage(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:

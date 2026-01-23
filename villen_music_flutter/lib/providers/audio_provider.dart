@@ -138,6 +138,20 @@ class AudioProvider extends ChangeNotifier {
     _audioHandler.stop();
   }
 
+  // --- Equalizer ---
+  
+  Future<void> setEqualizerEnabled(bool enabled) async {
+    await _audioHandler.setEqualizerEnabled(enabled);
+  }
+  
+  Future<List<AndroidEqualizerBand>> getEqualizerBands() async {
+    return await _audioHandler.getEqualizerBands();
+  }
+  
+  Future<void> setBandGain(int bandIndex, double gain) async {
+    await _audioHandler.setBandGain(bandIndex, gain);
+  }
+
   @override
   void dispose() {
     _completionController.close();

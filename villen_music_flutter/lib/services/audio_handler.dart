@@ -9,7 +9,9 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:villen_music/models/song.dart';
 
 class VillenAudioHandler {
-  final _player = AudioPlayer();
+  // Equalizer (Android only)
+  AndroidEqualizer? _equalizer;
+  late final AudioPlayer _player;
   ConcatenatingAudioSource? _playlist;
   
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
@@ -18,17 +20,59 @@ class VillenAudioHandler {
   Stream<SequenceState?> get sequenceStateStream => _player.sequenceStateStream;
 
   VillenAudioHandler() {
+    // Init Equalizer
+    _equalizer = AndroidEqualizer();
+    
+    // Init PLayer with Pipeline
+    _player = AudioPlayer(
+      audioPipeline: AudioPipeline(
+        androidAudioEffects: [_equalizer!],
+      ),
+    );
+    
     _init();
   }
   
   void _init() async {
      // Default empty playlist
      _playlist = ConcatenatingAudioSource(children: []);
+     
      try {
        await _player.setAudioSource(_playlist!);
+       // Enable by default
+       await _equalizer?.setEnabled(true);
      } catch (e) {
-       debugPrint("Error initializing playlist: $e");
+       debugPrint("Error initializing player: $e");
      }
+  }
+
+  // --- Equalizer Methods ---
+  
+  bool get isEqualizerEnabled => _equalizer?.enabled ?? false;
+  
+  Future<void> setEqualizerEnabled(bool enabled) async {
+    await _equalizer?.setEnabled(enabled);
+  }
+  
+  Future<List<AndroidEqualizerBand>> getEqualizerBands() async {
+    if (_equalizer == null) return [];
+    try {
+      final params = await _equalizer!.parameters;
+      return params.bands;
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  Future<void> setBandGain(int bandIndex, double gain) async {
+    if (_equalizer == null) return;
+    try {
+       final params = await _equalizer!.parameters;
+       final band = params.bands[bandIndex];
+       await band.setGain(gain);
+    } catch (e) {
+       debugPrint("Error setting band gain: $e");
+    }
   }
 
   /// Start a new queue with this song
@@ -59,7 +103,8 @@ class VillenAudioHandler {
   }
 
   AudioSource _createSource(Song song, String streamUrl) {
-      return AudioSource.uri(
+      // Use LockCachingAudioSource for smart caching
+      return LockCachingAudioSource(
         Uri.parse(streamUrl),
         tag: MediaItem(
           id: song.id,

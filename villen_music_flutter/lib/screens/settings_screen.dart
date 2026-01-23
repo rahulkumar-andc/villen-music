@@ -46,6 +46,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (val) => setState(() => _autoPlay = val),
           ),
           
+          _SettingsTile(
+            icon: Icons.equalizer_rounded,
+            title: 'Equalizer',
+            subtitle: 'Adjust audio frequencies',
+            onTap: () => Navigator.pushNamed(context, '/equalizer'),
+          ),
+
           const Divider(height: 32),
           
           // Notifications Section

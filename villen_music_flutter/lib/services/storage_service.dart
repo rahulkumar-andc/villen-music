@@ -210,9 +210,33 @@ class StorageService {
     return _prefs.getStringList('downloaded_ids') ?? [];
   }
   
-  // Check if song is downloaded
   bool isSongDownloaded(String songId) {
     return _prefs.containsKey('download_path_$songId');
+  }
+
+  // --- Search History ---
+
+  Future<void> addToSearchHistory(String query) async {
+    if (query.trim().isEmpty) return;
+    final history = getSearchHistory();
+    history.remove(query); // Remove dupes
+    history.insert(0, query); // Add to top
+    if (history.length > 10) history.removeLast(); // Limit to 10
+    await _prefs.setStringList('search_history', history);
+  }
+
+  List<String> getSearchHistory() {
+    return _prefs.getStringList('search_history') ?? [];
+  }
+
+  Future<void> removeFromSearchHistory(String query) async {
+    final history = getSearchHistory();
+    history.remove(query);
+    await _prefs.setStringList('search_history', history);
+  }
+  
+  Future<void> clearSearchHistory() async {
+    await _prefs.remove('search_history');
   }
 
   // --- Clear All ---

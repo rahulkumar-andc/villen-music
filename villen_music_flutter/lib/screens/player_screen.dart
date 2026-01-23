@@ -11,6 +11,7 @@ import 'package:villen_music/core/utils/duration_formatter.dart';
 import 'package:villen_music/providers/audio_provider.dart';
 import 'package:villen_music/providers/download_provider.dart';
 import 'package:villen_music/providers/music_provider.dart';
+import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/widgets/audio_visualizer.dart';
 import 'package:villen_music/widgets/image_loader.dart';
 import 'package:villen_music/widgets/sleep_timer.dart';
@@ -448,6 +449,104 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
     );
   }
 
+  void _showLyrics(BuildContext context, Song song) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceDark.withValues(alpha: 0.95),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[600],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Lyrics',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: FutureBuilder<String?>(
+                    future: context.read<ApiService>().getLyrics(song.id),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.lyrics_outlined, size: 48, color: Colors.grey[700]),
+                              const SizedBox(height: 16),
+                              const Text('No lyrics available', style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                        );
+                      }
+                      
+                      final lyrics = snapshot.data!.replaceAll('<br>', '\n');
+                      
+                      return ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                        children: [
+                          Text(
+                            lyrics,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              height: 1.8,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 50),
+                          const Text(
+                            "Lyrics provided by JioSaavn",
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 50),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -470,6 +569,15 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                 ),
               ),
               const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.lyrics_outlined),
+                title: const Text('View Lyrics'),
+                onTap: () {
+                   Navigator.pop(context);
+                   final song = context.read<AudioProvider>().currentSong;
+                   if (song != null) _showLyrics(context, song);
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.album_rounded),
                 title: const Text('Go to Album'),

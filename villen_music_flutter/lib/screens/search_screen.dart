@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:villen_music/models/song.dart';
 import 'package:villen_music/providers/audio_provider.dart';
 import 'package:villen_music/services/api_service.dart';
+import 'package:villen_music/services/storage_service.dart';
 import 'package:villen_music/widgets/song_tile.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -67,6 +68,10 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       final api = context.read<ApiService>();
       final results = await api.searchSongs(query);
+      
+      // Save to history
+      context.read<StorageService>().addToSearchHistory(query);
+      
       setState(() {
         _results = results;
         _isLoading = false;
@@ -140,22 +145,69 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    // Empty state (no query)
+    // Empty state (no query) -> Show History
     if (_results == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 80, color: theme.colorScheme.primary.withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
-            Text(
-              'Search for your favorite songs',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.textTheme.bodySmall?.color,
+      return Consumer<StorageService>(
+        builder: (context, storage, _) {
+          final history = storage.getSearchHistory();
+          if (history.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search, size: 80, color: theme.colorScheme.primary.withValues(alpha: 0.3)),
+                  const SizedBox(height: 16),
+                  Text('Search for your favorite songs', style: theme.textTheme.bodyLarge),
+                ],
               ),
-            ),
-          ],
-        ),
+            );
+          }
+          
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Recent Searches', style: theme.textTheme.titleMedium),
+                    TextButton(
+                      onPressed: () {
+                         storage.clearSearchHistory();
+                         setState(() {});
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final term = history[index];
+                    return ListTile(
+                      leading: const Icon(Icons.history_rounded),
+                      title: Text(term),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          storage.removeFromSearchHistory(term);
+                          setState(() {});
+                        },
+                      ),
+                      onTap: () {
+                        _controller.text = term;
+                        _performSearch(term);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       );
     }
 
