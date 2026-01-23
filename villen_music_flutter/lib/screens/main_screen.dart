@@ -84,7 +84,12 @@ class _MainScreenState extends State<MainScreen> {
         _lastPlayedId = current.id;
         // If queue is near end (last item), fetch next one NOW.
         if (musicProvider.autoQueueEnabled && musicProvider.nextSong == null) {
-          musicProvider.fetchAndAddSimilarSong(current);
+          musicProvider.fetchAndAddSimilarSong(current).then((_) {
+             final next = musicProvider.nextSong;
+             if (next != null) {
+               audioProvider.bufferNext(next);
+             }
+          });
         }
       }
     });

@@ -93,26 +93,33 @@ class AudioProvider extends ChangeNotifier {
 
   Future<void> playSong(Song song) async {
     try {
-      // Check if downloaded
-      final localPath = await _downloadService.getLocalPath(song.id);
-      
-      String? url;
-      if (localPath != null) {
-        url = Uri.file(localPath).toString();
-        debugPrint("Playing from local: $url");
-      } else {
-        url = await _apiService.getStreamUrl(song.id);
-        debugPrint("Playing from stream: $url");
-      }
-
+      final url = await _resolveUrl(song);
       if (url != null) {
+        // Force play immediately
+        debugPrint("Playing song: ${song.title}");
         await _audioHandler.playSong(song, url);
-      } else {
-        debugPrint("Stream URL not found for ${song.title}");
       }
     } catch (e) {
       debugPrint("Error playing song: $e");
     }
+  }
+
+  Future<void> bufferNext(Song song) async {
+    try {
+      final url = await _resolveUrl(song);
+      if (url != null) {
+        debugPrint("Gapless: Pre-buffering next song: ${song.title}");
+        await _audioHandler.addNext(song, url);
+      }
+    } catch (e) {
+      debugPrint("Error buffering song: $e");
+    }
+  }
+  
+  Future<String?> _resolveUrl(Song song) async {
+      final localPath = await _downloadService.getLocalPath(song.id);
+      if (localPath != null) return Uri.file(localPath).toString();
+      return await _apiService.getStreamUrl(song.id);
   }
 
   void togglePlayPause() {

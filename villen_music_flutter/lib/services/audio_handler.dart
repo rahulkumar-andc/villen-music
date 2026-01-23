@@ -10,47 +10,66 @@ import 'package:villen_music/models/song.dart';
 
 class VillenAudioHandler {
   final _player = AudioPlayer();
+  ConcatenatingAudioSource? _playlist;
   
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
-  
-  // Expose current sequence state for UI (optional)
   Stream<SequenceState?> get sequenceStateStream => _player.sequenceStateStream;
 
   VillenAudioHandler() {
-    // Optional: Log errors
-    _player.playerStateStream.listen((state) {
-      if (state.processingState == ProcessingState.completed) {
-        // Handle auto-next if we had a playlist
-      }
-    });
+    _init();
+  }
+  
+  void _init() async {
+     // Default empty playlist
+     _playlist = ConcatenatingAudioSource(children: []);
+     try {
+       await _player.setAudioSource(_playlist!);
+     } catch (e) {
+       debugPrint("Error initializing playlist: $e");
+     }
   }
 
-  /// Play a specific song immediately
+  /// Start a new queue with this song
   Future<void> playSong(Song song, String streamUrl) async {
     try {
-      // 1. Create AudioSource with Tag (MediaItem)
-      // This is how JustAudioBackground knows what to show in the notification
-      final source = AudioSource.uri(
-        Uri.parse(streamUrl),
-        tag: MediaItem(
-          id: song.id, // Unique ID
-          album: song.album ?? "Single",
-          title: song.title,
-          artist: song.artist,
-          artUri: song.image != null ? Uri.parse(song.image!) : null,
-          extras: {'url': streamUrl}, // Store URL if needed
-        ),
-      );
+      final source = _createSource(song, streamUrl);
       
-      // 2. Load and Play
-      await _player.setAudioSource(source);
+      // Reset playlist
+      _playlist = ConcatenatingAudioSource(children: [source]);
+      await _player.setAudioSource(_playlist!);
       _player.play();
       
     } catch (e) {
       debugPrint("Error playing audio: $e");
     }
+  }
+  
+  /// Add a song to the end of the current playlist (for pre-buffering)
+  Future<void> addNext(Song song, String streamUrl) async {
+    try {
+      final source = _createSource(song, streamUrl);
+      if (_playlist != null) {
+        await _playlist!.add(source);
+      }
+    } catch (e) {
+      debugPrint("Error adding next song: $e");
+    }
+  }
+
+  AudioSource _createSource(Song song, String streamUrl) {
+      return AudioSource.uri(
+        Uri.parse(streamUrl),
+        tag: MediaItem(
+          id: song.id,
+          album: song.album ?? "Single",
+          title: song.title,
+          artist: song.artist,
+          artUri: song.image != null ? Uri.parse(song.image!) : null,
+          extras: {'url': streamUrl},
+        ),
+      );
   }
 
   Future<void> play() => _player.play();
