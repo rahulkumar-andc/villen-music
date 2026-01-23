@@ -1,6 +1,7 @@
 /// Liked Songs Screen
 /// 
 /// Displays all songs the user has liked.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

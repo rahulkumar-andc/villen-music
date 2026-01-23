@@ -1,6 +1,7 @@
 /// API Constants for VILLEN Music App
 /// 
 /// Contains base URLs and endpoint definitions for the Django backend.
+library;
 
 class ApiConstants {
   // Base URL for the Django backend

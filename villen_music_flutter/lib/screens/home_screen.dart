@@ -1,6 +1,7 @@
 /// Home Screen / Tab
 /// 
 /// Displays trending songs and user's feed.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

@@ -2,6 +2,7 @@
 /// 
 /// Represents a song/track in the VILLEN Music app.
 /// Matches the JSON response from the Django backend.
+library;
 
 class Song {
   final String id;

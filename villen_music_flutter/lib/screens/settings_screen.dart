@@ -31,7 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           // Audio Section
-          _SectionTitle(title: 'Audio'),
+          const _SectionTitle(title: 'Audio'),
           _SettingsTile(
             icon: Icons.high_quality_rounded,
             title: 'Streaming Quality',
@@ -49,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 32),
           
           // Notifications Section
-          _SectionTitle(title: 'Notifications'),
+          const _SectionTitle(title: 'Notifications'),
           _SettingsSwitch(
             icon: Icons.notifications_outlined,
             title: 'Push Notifications',
@@ -61,7 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 32),
           
           // Account Section
-          _SectionTitle(title: 'Account'),
+          const _SectionTitle(title: 'Account'),
           Consumer<AuthProvider>(
             builder: (context, auth, _) {
               return _SettingsTile(
@@ -94,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 32),
           
           // About Section
-          _SectionTitle(title: 'About'),
+          const _SectionTitle(title: 'About'),
           _SettingsTile(
             icon: Icons.info_outline_rounded,
             title: 'About VILLEN Music',
@@ -218,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   colors: [AppTheme.primaryPurple, AppTheme.accentMagenta],
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -356,7 +356,7 @@ class _SettingsSwitch extends StatelessWidget {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: theme.colorScheme.secondary,
+        activeThumbColor: theme.colorScheme.secondary,
       ),
     );
   }

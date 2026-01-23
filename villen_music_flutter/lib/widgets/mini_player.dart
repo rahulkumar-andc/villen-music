@@ -62,7 +62,7 @@ class MiniPlayer extends StatelessWidget {
                       LinearProgressIndicator(
                         value: progress.clamp(0.0, 1.0),
                         backgroundColor: Colors.transparent,
-                        valueColor: AlwaysStoppedAnimation<Color>(
+                        valueColor: const AlwaysStoppedAnimation<Color>(
                           AppTheme.accentMagenta,
                         ),
                         minHeight: 2,
@@ -78,8 +78,8 @@ class MiniPlayer extends StatelessWidget {
                               child: Container(
                                 width: 68,
                                 height: 68,
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.only(
+                                decoration: const BoxDecoration(
+                                  borderRadius: BorderRadius.only(
                                     bottomLeft: Radius.circular(16),
                                   ),
                                 ),
@@ -103,7 +103,7 @@ class MiniPlayer extends StatelessWidget {
                                       if (audio.isPlaying)
                                         Container(
                                           color: Colors.black.withValues(alpha: 0.3),
-                                          child: Center(
+                                          child: const Center(
                                             child: Icon(
                                               Icons.graphic_eq_rounded,
                                               color: AppTheme.accentMagenta,
@@ -164,7 +164,7 @@ class MiniPlayer extends StatelessWidget {
                                   width: 44,
                                   height: 44,
                                   margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
                                         AppTheme.primaryPurple,

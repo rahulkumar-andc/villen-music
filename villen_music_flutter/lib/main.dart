@@ -1,6 +1,7 @@
 /// Main Entry Point
 /// 
 /// Initializes services and launches the app.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

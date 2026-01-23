@@ -65,7 +65,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Sleep Timer',
             style: TextStyle(
               fontSize: 18,
@@ -89,7 +89,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.bedtime_rounded,
                     color: AppTheme.accentMagenta,
                   ),
@@ -98,7 +98,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Timer Active',
                           style: TextStyle(
                             color: AppTheme.accentMagenta,
@@ -107,7 +107,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                         ),
                         Text(
                           _formatDuration(remaining),
-                          style: TextStyle(color: AppTheme.textSecondary),
+                          style: const TextStyle(color: AppTheme.textSecondary),
                         ),
                       ],
                     ),
@@ -120,7 +120,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                         const SnackBar(content: Text('Sleep timer cancelled')),
                       );
                     },
-                    child: Text(
+                    child: const Text(
                       'Cancel',
                       style: TextStyle(color: AppTheme.error),
                     ),
@@ -139,7 +139,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                 color: AppTheme.primaryPurple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.timer_outlined,
                 color: AppTheme.primaryPurple,
                 size: 20,
@@ -163,7 +163,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                 color: AppTheme.primaryPurple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.music_off_rounded,
                 color: AppTheme.primaryPurple,
                 size: 20,

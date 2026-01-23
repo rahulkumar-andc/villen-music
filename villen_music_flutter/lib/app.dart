@@ -1,6 +1,7 @@
 /// Main App Widget
 /// 
 /// Sets up Theme and Routing.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:villen_music/core/constants/global_keys.dart';

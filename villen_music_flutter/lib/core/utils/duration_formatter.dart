@@ -1,6 +1,7 @@
 /// Duration Formatter Utilities
 /// 
 /// Helper functions for formatting audio durations.
+library;
 
 class DurationFormatter {
   /// Format duration as mm:ss or hh:mm:ss

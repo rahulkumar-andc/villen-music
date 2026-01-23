@@ -1,6 +1,7 @@
 /// User Model
 /// 
 /// Represents a generic user in the app.
+library;
 
 class User {
   final String username;

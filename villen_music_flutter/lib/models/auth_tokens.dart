@@ -1,6 +1,7 @@
 /// Auth Tokens Model
 /// 
 /// Represents the JWT tokens returned from login.
+library;
 
 class AuthTokens {
   final String accessToken;

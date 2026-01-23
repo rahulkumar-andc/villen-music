@@ -2,6 +2,7 @@
 /// 
 /// Bridges the UI and the AudioHandler service.
 /// Ensures the UI reflects the current playback state.
+library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';

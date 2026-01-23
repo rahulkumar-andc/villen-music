@@ -126,7 +126,7 @@ class _SongTileState extends State<SongTile> with SingleTickerProviderStateMixin
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
                             color: Colors.black.withValues(alpha: 0.5),
-                            child: Center(
+                            child: const Center(
                               child: Icon(
                                 Icons.graphic_eq_rounded,
                                 color: AppTheme.accentMagenta,
@@ -175,7 +175,7 @@ class _SongTileState extends State<SongTile> with SingleTickerProviderStateMixin
                               color: AppTheme.accentMagenta.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
+                            child: const Text(
                               'NOW PLAYING',
                               style: TextStyle(
                                 color: AppTheme.accentMagenta,
@@ -219,7 +219,7 @@ class _SongTileState extends State<SongTile> with SingleTickerProviderStateMixin
                     width: 32,
                     height: 32,
                     child: IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.more_horiz,
                         size: 20,
                         color: AppTheme.textMuted,

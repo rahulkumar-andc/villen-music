@@ -1,6 +1,7 @@
 /// Music Provider
 /// 
 /// Manages liked songs, recently played, and music library state.
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:villen_music/models/song.dart';
@@ -13,7 +14,7 @@ class MusicProvider extends ChangeNotifier {
   
   // Liked Songs
   Set<String> _likedSongIds = {};
-  List<Song> _likedSongs = [];
+  final List<Song> _likedSongs = [];
   
   // Recently Played
   List<Song> _recentlyPlayed = [];

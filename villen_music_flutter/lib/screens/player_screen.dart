@@ -1,9 +1,9 @@
 /// Player Screen
 /// 
 /// Full screen audio player with enhanced controls and visualizer.
+library;
 
 import 'dart:ui';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
@@ -72,7 +72,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
               icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
               onPressed: () => Navigator.pop(context),
             ),
-            title: Column(
+            title: const Column(
               children: [
                 Text(
                   'PLAYING FROM',
@@ -192,7 +192,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                                           height: size.width * 0.75,
                                         )
                                       : Container(
-                                          decoration: BoxDecoration(
+                                          decoration: const BoxDecoration(
                                             gradient: LinearGradient(
                                               colors: [
                                                 AppTheme.primaryPurple,
@@ -290,14 +290,14 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                               children: [
                                 Text(
                                   DurationFormatter.format(audio.currentPosition),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AppTheme.textMuted,
                                     fontSize: 12,
                                   ),
                                 ),
                                 Text(
                                   DurationFormatter.format(audio.totalDuration),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AppTheme.textMuted,
                                     fontSize: 12,
                                   ),
@@ -348,7 +348,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                               width: 72,
                               height: 72,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
+                                gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
@@ -581,7 +581,7 @@ class _BottomAction extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppTheme.textMuted,
               fontSize: 11,
             ),

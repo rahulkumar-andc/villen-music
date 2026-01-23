@@ -1,6 +1,7 @@
 /// App Theme for VILLEN Music
 /// 
 /// Dark purple/magenta theme matching the Electron app design.
+library;
 
 import 'package:flutter/material.dart';
 

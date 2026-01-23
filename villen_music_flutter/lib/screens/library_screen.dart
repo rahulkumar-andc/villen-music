@@ -1,6 +1,7 @@
 /// Library Screen
 /// 
 /// Displays user's music library with liked songs, recently played, and playlists.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,7 +10,6 @@ import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/providers/audio_provider.dart';
 import 'package:villen_music/providers/download_provider.dart';
 import 'package:villen_music/providers/music_provider.dart';
-import 'package:villen_music/widgets/song_tile.dart';
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});

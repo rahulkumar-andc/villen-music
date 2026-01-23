@@ -1,6 +1,7 @@
 /// Download Service
 /// 
 /// Handles downloading songs securely and managing local storage.
+library;
 
 import 'dart:io';
 import 'package:dio/dio.dart';

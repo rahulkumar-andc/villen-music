@@ -1,6 +1,7 @@
 /// Auth Provider
 /// 
 /// Manages authentication state for the app.
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:villen_music/services/auth_service.dart';

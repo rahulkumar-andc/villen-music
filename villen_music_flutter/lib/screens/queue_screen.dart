@@ -1,6 +1,7 @@
 /// Queue Screen
 /// 
 /// Displays the current playback queue with reordering support.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -141,7 +142,7 @@ class QueueScreen extends StatelessWidget {
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           color: AppTheme.error.withValues(alpha: 0.2),
-                          child: Icon(Icons.delete, color: AppTheme.error),
+                          child: const Icon(Icons.delete, color: AppTheme.error),
                         ),
                         onDismissed: (_) {
                           music.removeFromQueue(actualIndex);

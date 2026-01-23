@@ -1,6 +1,7 @@
 /// Download Provider
 /// 
 /// Manages the state of active downloads and downloaded content.
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:villen_music/models/song.dart';

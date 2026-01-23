@@ -2,6 +2,7 @@
 /// 
 /// Wrapper screen with bottom navigation.
 /// Handles global audio logic like auto-advancing the queue.
+library;
 
 import 'dart:async';
 import 'package:flutter/material.dart';
