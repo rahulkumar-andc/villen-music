@@ -15,6 +15,7 @@ class EqualizerScreen extends StatefulWidget {
 
 class _EqualizerScreenState extends State<EqualizerScreen> {
   List<AndroidEqualizerBand>? _bands;
+  final Map<int, double> _localGains = {};
   bool _enabled = true;
   bool _isLoading = true;
 
@@ -64,6 +65,8 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         itemBuilder: (context, index) {
                           final band = _bands![index];
+                          final currentGain = _localGains[index] ?? band.gain;
+                          
                           final freq = band.centerFrequency < 1000
                               ? '${band.centerFrequency.toInt()} Hz'
                               : '${(band.centerFrequency / 1000).toStringAsFixed(1)} kHz';
@@ -75,7 +78,7 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(freq, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Text('${band.gain.toStringAsFixed(1)} dB'),
+                                  Text('${currentGain.toStringAsFixed(1)} dB'),
                                 ],
                               ),
                               SliderTheme(
@@ -86,12 +89,12 @@ class _EqualizerScreenState extends State<EqualizerScreen> {
                                   thumbColor: AppTheme.primaryPurple,
                                 ),
                                 child: Slider(
-                                  value: band.gain,
-                                  min: -15.0, // Typical range, adjust if min/max provided
+                                  value: currentGain,
+                                  min: -15.0, // Typical range
                                   max: 15.0,
                                   onChanged: _enabled ? (val) {
                                     setState(() {
-                                      band.gain = val;
+                                      _localGains[index] = val;
                                     });
                                     context.read<AudioProvider>().setBandGain(index, val);
                                   } : null,

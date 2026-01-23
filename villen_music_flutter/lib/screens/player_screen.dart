@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/core/utils/duration_formatter.dart';
 import 'package:villen_music/providers/audio_provider.dart';
+import 'package:villen_music/models/song.dart';
 import 'package:villen_music/providers/download_provider.dart';
 import 'package:villen_music/providers/music_provider.dart';
 import 'package:villen_music/services/api_service.dart';
