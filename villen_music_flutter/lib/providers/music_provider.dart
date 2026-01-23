@@ -4,10 +4,12 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:villen_music/models/song.dart';
+import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/services/storage_service.dart';
 
 class MusicProvider extends ChangeNotifier {
   final StorageService _storageService;
+  final ApiService _apiService; // Add ApiService
   
   // Liked Songs
   Set<String> _likedSongIds = {};
@@ -20,7 +22,10 @@ class MusicProvider extends ChangeNotifier {
   List<Song> _queue = [];
   int _currentIndex = 0;
   
-  MusicProvider(this._storageService) {
+  // Auto Queue
+  bool _autoQueueEnabled = true;
+
+  MusicProvider(this._storageService, this._apiService) {
     _loadFromStorage();
   }
   
@@ -186,5 +191,44 @@ class MusicProvider extends ChangeNotifier {
     }
     
     notifyListeners();
+  }
+  
+  // --- Auto Queue ---
+  
+  bool get autoQueueEnabled => _autoQueueEnabled;
+  
+  void toggleAutoQueue() {
+    _autoQueueEnabled = !_autoQueueEnabled;
+    notifyListeners();
+  }
+  
+  Future<void> fetchAndAddSimilarSong(Song current) async {
+    if (!_autoQueueEnabled) return;
+    
+    try {
+      // 1. Try to find songs by the same artist
+      final results = await _apiService.searchSongs(current.artist, limit: 10);
+      
+      // Filter out current song
+      final candidates = results.where((s) => s.id != current.id).toList();
+      
+      if (candidates.isNotEmpty) {
+        // Pick one randomly or the first one
+        candidates.shuffle();
+        final nextSong = candidates.first;
+        addToQueue(nextSong);
+      } else {
+        // Fallback: Get trending if no artist match
+        final trending = await _apiService.getTrending();
+        final trendingCandidates = trending.where((s) => s.id != current.id).toList();
+        
+        if (trendingCandidates.isNotEmpty) {
+          trendingCandidates.shuffle();
+          addToQueue(trendingCandidates.first);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching similar song: $e");
+    }
   }
 }

@@ -12,6 +12,7 @@ import 'package:villen_music/providers/audio_provider.dart';
 import 'package:villen_music/providers/download_provider.dart';
 import 'package:villen_music/providers/music_provider.dart';
 import 'package:villen_music/widgets/audio_visualizer.dart';
+import 'package:villen_music/widgets/image_loader.dart';
 import 'package:villen_music/widgets/sleep_timer.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -104,9 +105,11 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
             children: [
               // Background Image with Blur
               if (song.image != null)
-                CachedNetworkImage(
+                ImageLoader(
                   imageUrl: song.image!,
                   fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                 )
               else
                 Container(
@@ -183,9 +186,10 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                                 ),
                                 child: ClipOval(
                                   child: song.image != null
-                                      ? CachedNetworkImage(
+                                      ? ImageLoader(
                                           imageUrl: song.image!,
-                                          fit: BoxFit.cover,
+                                          width: size.width * 0.75,
+                                          height: size.width * 0.75,
                                         )
                                       : Container(
                                           decoration: BoxDecoration(

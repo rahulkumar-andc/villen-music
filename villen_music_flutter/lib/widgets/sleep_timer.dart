@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
-import 'package:villen_music/providers/audio_provider.dart';
+import 'package:villen_music/services/sleep_timer_service.dart';
 
 class SleepTimerSheet extends StatefulWidget {
   const SleepTimerSheet({super.key});
@@ -27,15 +27,29 @@ class SleepTimerSheet extends StatefulWidget {
 }
 
 class _SleepTimerSheetState extends State<SleepTimerSheet> {
-  static Timer? _activeTimer;
-  static DateTime? _endTime;
-  static int? _selectedMinutes;
-  
+  Timer? _uiTimer;
   final List<int> _options = [5, 10, 15, 30, 45, 60, 90];
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh UI every second to show countdown
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _uiTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final remaining = _getRemaining();
+    // Access service
+    final timerService = Provider.of<SleepTimerService>(context);
+    final remaining = timerService.remainingDuration;
     
     return SafeArea(
       child: Column(
@@ -99,7 +113,13 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                     ),
                   ),
                   TextButton(
-                    onPressed: _cancelTimer,
+                    onPressed: () {
+                      timerService.cancelTimer();
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Sleep timer cancelled')),
+                      );
+                    },
                     child: Text(
                       'Cancel',
                       style: TextStyle(color: AppTheme.error),
@@ -126,10 +146,13 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
               ),
             ),
             title: Text('$minutes minutes'),
-            trailing: _selectedMinutes == minutes
-                ? Icon(Icons.check, color: AppTheme.accentMagenta)
-                : null,
-            onTap: () => _setTimer(minutes),
+            onTap: () {
+              timerService.setTimer(minutes);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Sleep timer set for $minutes minutes')),
+              );
+            },
           ))),
           
           // End of current track option
@@ -147,24 +170,18 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
               ),
             ),
             title: const Text('End of current song'),
-            onTap: () => _setEndOfTrack(),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Will stop after current song (Coming Soon)')),
+              );
+            },
           ),
           
           const SizedBox(height: 16),
         ],
       ),
     );
-  }
-
-  Duration? _getRemaining() {
-    if (_endTime == null) return null;
-    final remaining = _endTime!.difference(DateTime.now());
-    if (remaining.isNegative) {
-      _endTime = null;
-      _selectedMinutes = null;
-      return null;
-    }
-    return remaining;
   }
 
   String _formatDuration(Duration d) {
@@ -176,61 +193,5 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
       return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  void _setTimer(int minutes) {
-    _activeTimer?.cancel();
-    
-    setState(() {
-      _selectedMinutes = minutes;
-      _endTime = DateTime.now().add(Duration(minutes: minutes));
-    });
-    
-    _activeTimer = Timer(Duration(minutes: minutes), () {
-      _stopPlayback();
-    });
-    
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sleep timer set for $minutes minutes'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _setEndOfTrack() {
-    // This would require hooking into audio completion
-    // For now, just show a message
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Will stop after current song'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _cancelTimer() {
-    _activeTimer?.cancel();
-    setState(() {
-      _endTime = null;
-      _selectedMinutes = null;
-    });
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sleep timer cancelled'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _stopPlayback() {
-    // Access audio provider and stop
-    final audio = Provider.of<AudioProvider>(context, listen: false);
-    audio.stop();
-    _endTime = null;
-    _selectedMinutes = null;
   }
 }

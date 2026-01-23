@@ -14,6 +14,7 @@ import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/services/audio_handler.dart';
 import 'package:villen_music/services/auth_service.dart';
 import 'package:villen_music/services/download_service.dart';
+import 'package:villen_music/services/sleep_timer_service.dart';
 import 'package:villen_music/services/storage_service.dart';
 
 Future<void> main() async {
@@ -38,6 +39,7 @@ Future<void> main() async {
   // 3. Initialize Audio Logic (Wrapper around Just Audio)
   final audioHandler = VillenAudioHandler(); // Just a logic class now
   final downloadService = DownloadService(storageService);
+  final sleepTimerService = SleepTimerService(audioHandler);
 
   // 4. Run App with Providers
   runApp(
@@ -55,7 +57,7 @@ Future<void> main() async {
           create: (_) => AuthProvider(authService, storageService),
         ),
         ChangeNotifierProvider(
-          create: (_) => MusicProvider(storageService),
+          create: (_) => MusicProvider(storageService, apiService),
         ),
         ChangeNotifierProvider(
           create: (_) => AudioProvider(audioHandler, apiService, downloadService),
@@ -63,6 +65,7 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => DownloadProvider(downloadService, storageService, apiService),
         ),
+        ChangeNotifierProvider.value(value: sleepTimerService),
       ],
       child: const VillenApp(),
     ),

@@ -3,6 +3,7 @@
 /// Sets up Theme and Routing.
 
 import 'package:flutter/material.dart';
+import 'package:villen_music/core/constants/global_keys.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/screens/liked_songs_screen.dart';
 import 'package:villen_music/screens/login_screen.dart';
@@ -20,6 +21,7 @@ class VillenApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'VILLEN Music',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,

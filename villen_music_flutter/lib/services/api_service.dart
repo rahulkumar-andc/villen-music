@@ -4,7 +4,10 @@
 // Handles Authentication interceptors, auto-refresh, and API methods.
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:villen_music/core/constants/api_constants.dart';
+import 'package:villen_music/core/constants/global_keys.dart';
+import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/models/song.dart';
 import 'package:villen_music/services/storage_service.dart';
 
@@ -73,6 +76,17 @@ class ApiService {
               }
             }
           }
+
+          // Global Error Feedback
+          final msg = _getErrorMessage(e);
+          scaffoldMessengerKey.currentState?.showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+
           return handler.next(e);
         },
       ),
@@ -139,6 +153,21 @@ class ApiService {
       return response.data['url'];
     } catch (e) {
       return null;
+    }
+  }
+
+  String _getErrorMessage(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Connection timed out. Please check your internet.';
+      case DioExceptionType.badResponse:
+        return 'Server error (${e.response?.statusCode}). Please try again.';
+      case DioExceptionType.connectionError:
+        return 'No internet connection.';
+      default:
+        return 'Something went wrong. Please try again.';
     }
   }
 }

@@ -2,11 +2,11 @@
 // 
 // Displays a single song in a list with enhanced styling.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/core/utils/duration_formatter.dart';
 import 'package:villen_music/models/song.dart';
+import 'package:villen_music/widgets/image_loader.dart';
 
 class SongTile extends StatefulWidget {
   final Song song;
@@ -111,29 +111,12 @@ class _SongTileState extends State<SongTile> with SingleTickerProviderStateMixin
                       child: SizedBox(
                         width: 56,
                         height: 56,
-                        child: widget.song.image != null
-                            ? CachedNetworkImage(
-                                imageUrl: widget.song.image!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: AppTheme.cardDark,
-                                  child: const Center(
-                                    child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                  ),
-                                ),
-                                errorWidget: (context, url, _) => Container(
-                                  color: AppTheme.cardDark,
-                                  child: const Icon(Icons.music_note),
-                                ),
-                              )
-                            : Container(
-                                color: AppTheme.cardDark,
-                                child: const Icon(Icons.music_note),
-                              ),
+                        child: ImageLoader(
+                          imageUrl: widget.song.image,
+                          width: 56,
+                          height: 56,
+                          borderRadius: 0, // Parent has ClipRRect
+                        ),
                       ),
                     ),
                     // Playing indicator overlay

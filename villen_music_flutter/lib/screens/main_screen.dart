@@ -44,11 +44,37 @@ class _MainScreenState extends State<MainScreen> {
     final musicProvider = context.read<MusicProvider>();
     
     // Auto-advance logic
-    _audioSubscription = audioProvider.onSongFinished.listen((_) {
+    _audioSubscription = audioProvider.onSongFinished.listen((_) async {
+      // 1. Try to go to next song in queue
       if (musicProvider.goToNext()) {
         final nextSong = musicProvider.currentSong;
         if (nextSong != null) {
           audioProvider.playSong(nextSong);
+        }
+      } else if (musicProvider.autoQueueEnabled) {
+        // 2. Queue is empty/finished. Try auto-queue.
+        final lastSong = musicProvider.currentSong;
+        if (lastSong != null) {
+          // Show feedback
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Autoplaying similar song...'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(bottom: 80, left: 16, right: 16), // Avoid miniplayer
+            ),
+          );
+
+          // Fetch similar
+          await musicProvider.fetchAndAddSimilarSong(lastSong);
+
+          // Try advancing again
+          if (musicProvider.goToNext()) {
+            final nextSong = musicProvider.currentSong;
+            if (nextSong != null) {
+              audioProvider.playSong(nextSong);
+            }
+          }
         }
       }
     });
