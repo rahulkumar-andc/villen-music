@@ -9,7 +9,30 @@ A premium personal music ecosystem featuring a diverse tech stack:
 
 ---
 
-## 🚀 Quick Start (Development)
+## � Download & Install
+
+**[Get the latest release here!](https://github.com/rahulkumar-andc/villen-music/releases/latest)**
+
+### 📱 Android (Mobile)
+- **Modern Phones (Pixel, Samsung, etc.):** Download `app-arm64-v8a-release.apk`.
+- **Older Phones:** Download `app-armeabi-v7a-release.apk`.
+- **Note:** If you are unsure, try the Arm64 version first.
+
+### 💻 Windows
+- Download `VillenMusic 1.3.0.exe`.
+- This is a portable executable. Just double-click to run!
+
+### 🐧 Linux
+- **Portable:** Download `VillenMusic-1.3.0.AppImage`. Make it executable (`chmod +x`) and run.
+- **Install:** Download `villen-music_1.3.0_amd64.deb` and install via `sudo dpkg -i <filename>`.
+
+### 🍎 Mac (macOS)
+- *Currently requires building from source.*
+- See the [Source Build](#2-frontend-desktop) instructions below.
+
+---
+
+## �🚀 Quick Start (Development)
 
 ### 1. Backend (Django)
 *The core API server required for both Frontend and Mobile.*
