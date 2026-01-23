@@ -144,16 +144,11 @@ class ApiService {
   }
 
   /// Get Stream URL
+  /// Now returns the direct backend proxy URL instead of fetching a JSON value
   Future<String?> getStreamUrl(String songId, {String quality = '320'}) async {
-    try {
-      final response = await _dio.get(
-        ApiConstants.stream(songId),
-        queryParameters: {'quality': quality},
-      );
-      return response.data['url'];
-    } catch (e) {
-      return null;
-    }
+     // Return constructing URL directly
+     // The backend now proxies the stream at this endpoint
+     return '${ApiConstants.baseUrl}/stream/$songId/?quality=$quality';
   }
 
 

@@ -1,5 +1,7 @@
 # backend/music/views.py
 
+import requests
+from django.http import StreamingHttpResponse
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
@@ -27,14 +29,32 @@ def search_songs(request):
 
 @require_GET
 def stream_song(request, song_id):
-    """Get stream URL for a song with quality fallback."""
+    """Proxy stream for a song with quality fallback."""
     preferred_quality = request.GET.get("quality", "320")
     stream_url = service.get_stream(song_id, preferred_quality)
 
     if not stream_url:
         return JsonResponse({"error": "Stream not available"}, status=404)
 
-    return JsonResponse({"url": stream_url, "quality": preferred_quality})
+    # Proxy the stream
+    try:
+        # Stream=True is critical to not load file into memory
+        upstream_response = requests.get(stream_url, stream=True, timeout=10)
+        
+        response = StreamingHttpResponse(
+            upstream_response.iter_content(chunk_size=8192),
+            content_type=upstream_response.headers.get("Content-Type", "audio/mpeg"),
+            status=upstream_response.status_code
+        )
+        
+        # Forward relevant headers
+        if "Content-Length" in upstream_response.headers:
+            response["Content-Length"] = upstream_response.headers["Content-Length"]
+        response["Accept-Ranges"] = "bytes"
+        
+        return response
+    except requests.RequestException as e:
+        return JsonResponse({"error": "Stream proxy failed"}, status=502)
 
 
 @require_GET
