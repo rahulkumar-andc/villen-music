@@ -119,19 +119,29 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # CORS Configuration
+# CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://localhost:8080",
     "http://127.0.0.1:3000",
     "http://localhost:3000",
+    "http://127.0.0.1:5000", # Flutter web (debug)
+    "http://localhost:5000",
+    "https://villen-music.onrender.com", # Production
 ]
 
-# For Electron apps (file:// protocol)
-CORS_ALLOW_ALL_ORIGINS = True
+# For Electron apps (file:// protocol), we might need this, 
+# but for security, let's rely on specific origins or regex if possible.
+# If Electron uses a local server, the above are fine.
+# If strictly file://, CORS is tricky. Keeping False for safety unless strictly needed.
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 CORS_ALLOW_METHODS = [
     "GET",
     "OPTIONS",
+    "POST",
+    "PUT",
+    "DELETE",
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -141,6 +151,7 @@ CORS_ALLOW_HEADERS = [
     "content-type",
     "origin",
     "user-agent",
+    "x-csrftoken",
 ]
 
 
@@ -177,11 +188,19 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    }
 }
 
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),  # Long expiry for convenience
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Reduced from 30 days
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Reduced from 60 days
     'ROTATE_REFRESH_TOKENS': True,
 }
