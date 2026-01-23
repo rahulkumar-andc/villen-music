@@ -1,60 +1,81 @@
-# 🎧 VILLEN Music Player
+<div align="center">
 
-A premium personal music ecosystem featuring a diverse tech stack:
-- **Backend:** Django (Python) - Robust API & Authentication
-- **Frontend:** Electron (JS) - Glassmorphism Desktop Player
-- **Mobile:** Flutter (Dart) - High-performance Android/iOS App
+# 🎧 VILLEN Music Player
+### The Ultimate Personal Music Ecosystem
+
+[![Release](https://img.shields.io/github/v/release/rahulkumar-andc/villen-music?style=for-the-badge&color=magenta)](https://github.com/rahulkumar-andc/villen-music/releases/latest)
+[![License](https://img.shields.io/github/license/rahulkumar-andc/villen-music?style=for-the-badge&color=blue)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Linux-teal?style=for-the-badge)](https://github.com/rahulkumar-andc/villen-music/releases)
+[![Built With](https://img.shields.io/badge/Built%20With-Flutter%20%26%20Django-orange?style=for-the-badge)](https://flutter.dev)
+
+A premium, cross-platform music experience combining a robust **Django** backend, a high-performance **Flutter** mobile app, and a sleek **Electron** desktop player.
 
 ![VILLEN Music Player](screenshots/main-ui.png)
 
----
+[**Download Latest Release**](https://github.com/rahulkumar-andc/villen-music/releases/latest) • [**Report Bug**](https://github.com/rahulkumar-andc/villen-music/issues) • [**Request Feature**](https://github.com/rahulkumar-andc/villen-music/issues)
 
-## � Download & Install
-
-**[Get the latest release here!](https://github.com/rahulkumar-andc/villen-music/releases/latest)**
-
-### 📱 Android (Mobile)
-- **Modern Phones (Pixel, Samsung, etc.):** Download `app-arm64-v8a-release.apk`.
-- **Older Phones:** Download `app-armeabi-v7a-release.apk`.
-- **Note:** If you are unsure, try the Arm64 version first.
-
-### 💻 Windows
-- Download `VillenMusic 1.3.0.exe`.
-- This is a portable executable. Just double-click to run!
-
-### 🐧 Linux
-- **Portable:** Download `VillenMusic-1.3.0.AppImage`. Make it executable (`chmod +x`) and run.
-- **Install:** Download `villen-music_1.3.0_amd64.deb` and install via `sudo dpkg -i <filename>`.
-
-### 🍎 Mac (macOS)
-- *Currently requires building from source.*
-- See the [Source Build](#2-frontend-desktop) instructions below.
+</div>
 
 ---
 
-## �🚀 Quick Start (Development)
+## 📥 Download & Install
+
+Choose the version that fits your device. All releases are available on the [**GitHub Releases Page**](https://github.com/rahulkumar-andc/villen-music/releases/latest).
+
+| Platform | Type | File Name | Description |
+| :--- | :--- | :--- | :--- |
+| **📱 Android** | **Modern** | `app-arm64-v8a-release.apk` | Best for most modern smartphones (Pixel, Samsung, etc.) |
+| **📱 Android** | **Legacy** | `app-armeabi-v7a-release.apk` | For older or budget devices. |
+| **💻 Windows** | **Portable** | `VillenMusic 1.3.0.exe` | No install needed. Just double-click to run. |
+| **🐧 Linux** | **AppImage** | `VillenMusic-1.3.0.AppImage` | Portable executable for any distro. (`chmod +x` required) |
+| **🐧 Linux** | **Debian** | `villen-music_1.3.0_amd64.deb` | Native installer for Ubuntu/Debian. |
+
+> **Note for Mac Users:** macOS requires building from source currently. See [Development Guide](#-quick-start-development).
+
+---
+
+## ✨ Key Features
+
+| Feature | Description |
+| :--- | :--- |
+| **🎨 Premium UI** | Stunning dark purple/magenta glassmorphism design that looks great on any screen. |
+| **☁️ Cross-Platform** | Seamless experience across **Android**, **Windows**, and **Linux**. |
+| **🤖 Smart Queue** | Never stop the vibe. The app automatically queues recommendations when your playlist ends. |
+| **🔄 Auto-Updates** | Mobile app checks GitHub for updates and prompts you to install them instantly. |
+| **🌙 Sleep Timer** | Drift off to sleep with your favorite tunes; the app stops playback automatically. |
+| **🎤 Lyrics & Visuals** | Immersive playback with real-time visuals and lyrics support. |
+
+---
+
+## 🛠️ Technology Stack
+
+<div align="center">
+
+| Component | Tech | Role |
+| :--- | :--- | :--- |
+| **Backend** | ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) | REST API, Auth, Data Management |
+| **Mobile** | ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white) ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white) | Android & iOS Application |
+| **Desktop** | ![Electron](https://img.shields.io/badge/Electron-47848F?style=flat&logo=electron&logoColor=white) ![JS](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) | Windows & Linux Desktop Player |
+
+</div>
+
+---
+
+## 🚀 Quick Start (Development)
+
+Want to build it yourself? Follow these steps.
 
 ### 1. Backend (Django)
-*The core API server required for both Frontend and Mobile.*
-
 ```bash
 cd backend
-# Create virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
+python -m venv venv && source venv/bin/activate  # or venv\Scripts\activate
 pip install -r requirements.txt
-
-# Run migrations & server
 python manage.py migrate
 python manage.py runserver
 ```
-*Server runs at `http://127.0.0.1:8000`*
+*Runs at `http://127.0.0.1:8000`*
 
 ### 2. Frontend (Desktop)
-*Electron-based desktop player for Windows/Linux.*
-
 ```bash
 cd frontend
 npm install
@@ -62,8 +83,6 @@ npm start
 ```
 
 ### 3. Mobile (Flutter)
-*Android/iOS application.*
-
 ```bash
 cd villen_music_flutter
 flutter pub get
@@ -72,89 +91,30 @@ flutter run
 
 ---
 
-## 🔄 How to Release Updates
-
-### 1. Backend Updates
-*Deploying API changes.*
-
-1.  **Commit & Push:**
-    ```bash
-    git add .
-    git commit -m "feat: new api endpoint"
-    git push origin main
-    ```
-2.  **Auto-Deploy:** If connected to Render/Heroku, pushing to `main` triggers a deploy.
-3.  **Database:** If you changed models, run migrations on the server:
-    ```bash
-    python manage.py migrate
-    ```
-
-### 2. Frontend (Desktop) with Auto-Updates
-*Building .exe (Windows) and .AppImage (Linux).*
-
-1.  **Bump Version:** Edit `frontend/package.json`:
-    ```json
-    "version": "1.0.1"
-    ```
-2.  **Build:**
-    - **Linux:** `npm run build:linux`
-    - **Windows:** Use Docker (see `frontend/UPDATE.md`) or run `npm run build:win` on a Windows machine.
-3.  **Release:**
-    - Go to [GitHub Releases](https://github.com/rahulkumar-andc/villen-music/releases).
-    - Create a new release (tag `v1.0.1`).
-    - Upload the `.exe`, `.AppImage`, and `.deb` files from `frontend/dist/`.
-
-### 3. Mobile (Android) with In-App Updater
-*Building APKs that users can auto-update.*
-
-1.  **Bump Version:** Edit `villen_music_flutter/pubspec.yaml`:
-    ```yaml
-    version: 1.0.1+2
-    ```
-2.  **Build:**
-    ```bash
-    cd villen_music_flutter
-    # Build split APKs for smaller size (recommended)
-    flutter build apk --release --split-per-abi
-    ```
-3.  **Release:**
-    - Create a new [GitHub Release](https://github.com/rahulkumar-andc/villen-music/releases) (tag `v1.0.1`).
-    - Upload the APKs (e.g., `app-arm64-v8a-release.apk`).
-    - **Magic:** The app checks this GitHub Release on startup. If a newer version exists, it prompts the user to update!
-
----
-
 ## 📂 Project Structure
 
 ```
 Villen/
-├── backend/                # Django REST API
-│   ├── core/               # Settings (CORS, JWT)
-│   ├── music/              # Music App (Models, Views)
-│   └── manage.py
+├── 🐍 backend/                # Django REST API
+│   ├── core/                  # Settings (CORS, JWT)
+│   └── music/                 # Music App Models/Views
 │
-├── frontend/               # Electron Desktop App
-│   ├── app.js              # Player Logic
-│   ├── index.html          # UI Layout
-│   └── styles.css          # Glassmorphism Styles
+├── 🖥️ frontend/               # Electron Desktop App
+│   ├── app.js                 # Player Core Logic
+│   └── styles.css             # Glassmorphism Theme
 │
-└── villen_music_flutter/   # Mobile App
+└── 📱 villen_music_flutter/   # Mobile App
     ├── lib/
-    │   ├── providers/      # State Management
-    │   ├── services/       # API & Audio Handlers
-    │   └── screens/        # UI Pages
-    └── pubspec.yaml
+    │   ├── providers/         # State Management
+    │   ├── services/          # API & Audio Handlers
+    │   └── screens/           # UI Pages
+    └── ...
 ```
-
-## ✨ Key Features
-
-- **Premium UI:** Dark purple/magenta glassmorphism theme.
-- **Cross-Platform:** Works on Desktop (Electron) and Mobile (Flutter).
-- **Auto-Queue:** Automatically plays similar songs when the queue ends.
-- **In-App Updates:** Mobile app self-updates via GitHub.
-- **Sleep Timer:** Auto-stop playback.
-- **Lyrics & Visualizer:** Immersive playback experience.
 
 ---
 
-Made with ❤️ by VILLEN
+<div align="center">
+
+Made with ❤️ by **VILLEN**
+
+</div>
