@@ -29,21 +29,33 @@ def search_songs(request):
 
 @require_GET
 def stream_song(request, song_id):
-    """Proxy stream for a song with Range support (Partial Content)."""
+    """
+    Proxy stream with Content Negotiation.
+    - If Accept: application/json -> Return JSON URL (Legacy/API clients)
+    - Otherwise -> Proxy Audio Stream (Players)
+    """
     preferred_quality = request.GET.get("quality", "320")
-    stream_url = service.get_stream(song_id, preferred_quality)
+    
+    # 1. Content Negotiation
+    accept_header = request.headers.get("Accept", "")
+    if "application/json" in accept_header:
+        # Legacy behavior for API clients
+        stream_url = service.get_stream(song_id, preferred_quality)
+        if not stream_url:
+            return JsonResponse({"error": "Stream not available"}, status=404)
+        return JsonResponse({"url": stream_url, "quality": preferred_quality})
 
+    # 2. Proxy Mode (For Audio Players)
+    stream_url = service.get_stream(song_id, preferred_quality)
     if not stream_url:
         return JsonResponse({"error": "Stream not available"}, status=404)
 
-    # Proxy the stream
     try:
-        # Forward Range header if present
+        # Forward Range header
         headers = {}
         if "HTTP_RANGE" in request.META:
             headers["Range"] = request.META["HTTP_RANGE"]
 
-        # Stream=True is critical
         upstream_response = requests.get(
             stream_url, 
             stream=True, 
@@ -57,17 +69,20 @@ def stream_song(request, song_id):
             status=upstream_response.status_code
         )
         
-        # Forward relevant headers for buffering
-        for header in ["Content-Length", "Content-Range", "Accept-Ranges"]:
+        # Forward headers SAFE for proxying
+        # DO NOT forward Content-Length or Content-Encoding as they might mismatch 
+        # due to upstream compression or chunked transfer.
+        for header in ["Content-Range", "Accept-Ranges", "Cache-Control", "ETag"]:
             if header in upstream_response.headers:
                 response[header] = upstream_response.headers[header]
         
-        # Fallback if upstream doesn't send Accept-Ranges but supports it
+        # Ensure Accept-Ranges is set
         if "Accept-Ranges" not in response:
             response["Accept-Ranges"] = "bytes"
-        
+            
         return response
     except requests.RequestException as e:
+        print(f"Stream Error: {e}")
         return JsonResponse({"error": "Stream proxy failed"}, status=502)
 
 
