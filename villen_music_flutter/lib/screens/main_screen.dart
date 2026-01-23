@@ -86,17 +86,22 @@ class _MainScreenState extends State<MainScreen> {
         }
       } else if (musicProvider.autoQueueEnabled) {
         // 2. Queue is empty/finished. Try auto-queue.
-        final lastSong = musicProvider.currentSong;
+        // If queue is cleared, musicProvider.currentSong is null.
+        // Fallback to audioProvider.currentSong (last played).
+        final lastSong = musicProvider.currentSong ?? audioProvider.currentSong;
+        
         if (lastSong != null) {
           // Show feedback
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Autoplaying similar song...'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.only(bottom: 80, left: 16, right: 16), // Avoid miniplayer
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Autoplaying similar song...'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(bottom: 80, left: 16, right: 16),
+              ),
+            );
+          }
 
           // Fetch similar
           await musicProvider.fetchAndAddSimilarSong(lastSong);
@@ -108,6 +113,10 @@ class _MainScreenState extends State<MainScreen> {
               audioProvider.playSong(nextSong);
             }
           }
+        } else {
+             // 3. Absolute fallback: Play trending if we have absolutely no context
+             // Optional: Decide if we want to force play trending here.
+             // Usually better to let user pick something if completely empty.
         }
       }
     });
