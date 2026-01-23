@@ -29,7 +29,7 @@ def search_songs(request):
 
 @require_GET
 def stream_song(request, song_id):
-    """Proxy stream for a song with quality fallback."""
+    """Proxy stream for a song with Range support (Partial Content)."""
     preferred_quality = request.GET.get("quality", "320")
     stream_url = service.get_stream(song_id, preferred_quality)
 
@@ -38,8 +38,18 @@ def stream_song(request, song_id):
 
     # Proxy the stream
     try:
-        # Stream=True is critical to not load file into memory
-        upstream_response = requests.get(stream_url, stream=True, timeout=10)
+        # Forward Range header if present
+        headers = {}
+        if "HTTP_RANGE" in request.META:
+            headers["Range"] = request.META["HTTP_RANGE"]
+
+        # Stream=True is critical
+        upstream_response = requests.get(
+            stream_url, 
+            stream=True, 
+            timeout=10,
+            headers=headers
+        )
         
         response = StreamingHttpResponse(
             upstream_response.iter_content(chunk_size=8192),
@@ -47,10 +57,14 @@ def stream_song(request, song_id):
             status=upstream_response.status_code
         )
         
-        # Forward relevant headers
-        if "Content-Length" in upstream_response.headers:
-            response["Content-Length"] = upstream_response.headers["Content-Length"]
-        response["Accept-Ranges"] = "bytes"
+        # Forward relevant headers for buffering
+        for header in ["Content-Length", "Content-Range", "Accept-Ranges"]:
+            if header in upstream_response.headers:
+                response[header] = upstream_response.headers[header]
+        
+        # Fallback if upstream doesn't send Accept-Ranges but supports it
+        if "Accept-Ranges" not in response:
+            response["Accept-Ranges"] = "bytes"
         
         return response
     except requests.RequestException as e:
