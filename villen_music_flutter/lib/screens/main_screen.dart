@@ -25,6 +25,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   StreamSubscription? _audioSubscription;
+  String? _lastPlayedId;
   
   final List<Widget> _screens = const [
     HomeTab(),
@@ -76,6 +77,18 @@ class _MainScreenState extends State<MainScreen> {
     final audioProvider = context.read<AudioProvider>();
     final musicProvider = context.read<MusicProvider>();
     
+    // Prefetching logic: Trigger when current song changes
+    musicProvider.addListener(() {
+      final current = musicProvider.currentSong;
+      if (current != null && current.id != _lastPlayedId) {
+        _lastPlayedId = current.id;
+        // If queue is near end (last item), fetch next one NOW.
+        if (musicProvider.autoQueueEnabled && musicProvider.nextSong == null) {
+          musicProvider.fetchAndAddSimilarSong(current);
+        }
+      }
+    });
+
     // Auto-advance logic
     _audioSubscription = audioProvider.onSongFinished.listen((_) async {
       // 1. Try to go to next song in queue
