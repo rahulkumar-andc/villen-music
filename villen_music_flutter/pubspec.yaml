@@ -1,7 +1,7 @@
 name: villen_music
 description: "Premium music streaming app - VILLEN Music Player"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.3.0+1
 
 environment:
   sdk: ^3.5.0
