@@ -13,12 +13,14 @@ import 'package:villen_music/models/song.dart';
 import 'package:villen_music/services/download_service.dart';
 import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/services/audio_handler.dart';
+import 'package:villen_music/providers/music_provider.dart';
 import 'package:villen_music/core/constants/global_keys.dart';
 
 class AudioProvider extends ChangeNotifier {
   final VillenAudioHandler _audioHandler;
   final ApiService _apiService;
   final DownloadService _downloadService;
+  final MusicProvider _musicProvider;
 
   // Streams
   final _completionController = StreamController<void>.broadcast();
@@ -31,7 +33,7 @@ class AudioProvider extends ChangeNotifier {
   Duration totalDuration = Duration.zero;
   Song? currentSong;
   
-  AudioProvider(this._audioHandler, this._apiService, this._downloadService) {
+  AudioProvider(this._audioHandler, this._apiService, this._downloadService, this._musicProvider) {
     _initListeners();
   }
   
@@ -43,6 +45,7 @@ class AudioProvider extends ChangeNotifier {
                     state.processingState == ProcessingState.loading;
       
       if (state.processingState == ProcessingState.completed) {
+        _handleSongCompletion();
         _completionController.add(null);
       }
       
@@ -89,6 +92,38 @@ class AudioProvider extends ChangeNotifier {
       url: item.extras?['url'],
     );
     notifyListeners();
+  }
+
+  Future<void> _handleSongCompletion() async {
+    debugPrint("🎵 Song finished. Checking queue...");
+    
+    // 1. Check for next song in queue
+    if (_musicProvider.nextSong != null) {
+      debugPrint("⏭️ Playing next in queue: ${_musicProvider.nextSong!.title}");
+      _musicProvider.goToNext();
+      final next = _musicProvider.currentSong;
+      if (next != null) {
+        playSong(next);
+      }
+      return;
+    }
+    
+    // 2. If queue empty, check auto-queue
+    if (_musicProvider.autoQueueEnabled && currentSong != null) {
+      debugPrint("🤖 Auto-queue: Fetching similar song...");
+      await _musicProvider.fetchAndAddSimilarSong(currentSong!);
+      
+      // Check if song was added
+      final next = _musicProvider.currentSong;
+      if (next != null && next.id != currentSong!.id) {
+         debugPrint("▶️ Auto-playing similar song: ${next.title}");
+         playSong(next);
+      } else {
+        debugPrint("⚠️ Failed to find similar song or duplicate returned");
+      }
+    } else {
+      debugPrint("🛑 Queue ended and auto-queue disabled");
+    }
   }
 
   // --- Actions ---

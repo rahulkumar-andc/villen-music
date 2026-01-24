@@ -73,7 +73,12 @@ Future<void> main() async {
               create: (_) => MusicProvider(storageService, apiService),
             ),
             ChangeNotifierProvider(
-              create: (_) => AudioProvider(audioHandler, apiService, downloadService),
+              create: (context) => AudioProvider(
+                audioHandler, 
+                apiService, 
+                downloadService,
+                Provider.of<MusicProvider>(context, listen: false),
+              ),
             ),
             ChangeNotifierProvider(
               create: (_) => DownloadProvider(downloadService, storageService, apiService),

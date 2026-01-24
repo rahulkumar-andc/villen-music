@@ -207,29 +207,61 @@ class MusicProvider extends ChangeNotifier {
     if (!_autoQueueEnabled) return;
     
     try {
-      // 1. Try to find songs by the same artist
-      final results = await _apiService.searchSongs(current.artist, limit: 10);
+      debugPrint("🤖 Auto-queue: Fetching RANDOM song (No Artist Bias)");
+      final Set<String> recentIds = _recentlyPlayed.map((s) => s.id).toSet();
+      recentIds.add(current.id); // Add current to ignored list
       
-      // Filter out current song
-      final candidates = results.where((s) => s.id != current.id).toList();
+      List<Song> candidates = [];
       
-      if (candidates.isNotEmpty) {
-        // Pick one randomly or the first one
-        candidates.shuffle();
-        final nextSong = candidates.first;
-        addToQueue(nextSong);
-      } else {
-        // Fallback: Get trending if no artist match
-        final trending = await _apiService.getTrending();
-        final trendingCandidates = trending.where((s) => s.id != current.id).toList();
+      // 1. Fetch Trending/Popular (Primary Source for Randomness)
+      try {
+        // Fetch a large pool of trending songs
+        // Note: Ideally API should support 'random=true' or 'shuffle=true'
+        // For now, we fetch trending and shuffle client-side.
+        final trending = await _apiService.getTrending(
+          language: current.language?.isNotEmpty == true ? current.language! : 'hindi'
+        );
         
-        if (trendingCandidates.isNotEmpty) {
-          trendingCandidates.shuffle();
-          addToQueue(trendingCandidates.first);
+        // Filter out history
+        candidates.addAll(
+          trending.where((s) => !recentIds.contains(s.id))
+        );
+      } catch (e) {
+        debugPrint("⚠️ Trending fetch failed: $e");
+      }
+
+      // 2. Fallback: If trending didn't yield enough unique results
+      // We could try a broad search for a common term to get a "random" list
+      if (candidates.length < 3) {
+         try {
+           final randomResults = await _apiService.searchSongs("love", limit: 20); // "love" is a common keyword
+           candidates.addAll(
+             randomResults.where((s) => !recentIds.contains(s.id))
+           );
+         } catch (e) {
+            debugPrint("⚠️ Random search failed: $e");
+         }
+      }
+      
+      /// 3. Shuffle and Pick
+      if (candidates.isNotEmpty) {
+        // De-duplicate
+        final uniqueCandidates = { for (var s in candidates) s.id : s }.values.toList();
+        
+        if (uniqueCandidates.isNotEmpty) {
+          uniqueCandidates.shuffle();
+          final nextSong = uniqueCandidates.first;
+          
+          debugPrint("🎲 Selected Random Song: ${nextSong.title} (Artist: ${nextSong.artist})");
+          addToQueue(nextSong);
         }
+      } else {
+        debugPrint("⚠️ No random candidates found (All filtered or API error)");
+        // Last resort: If absolutely nothing, just pick *any* trending song even if recent
+        // to keep music playing? Or just stop? User prefers variety, so stopping might be better than repeating.
       }
     } catch (e) {
-      debugPrint("Error fetching similar song: $e");
+      debugPrint("❌ Error fetching random song: $e");
     }
   }
 }
