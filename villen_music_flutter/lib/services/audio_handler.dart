@@ -3,6 +3,7 @@
 // Provides a clean interface for AudioPlayer operations.
 // Uses just_audio_background via MediaItem tags for notifications.
 
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -13,6 +14,7 @@ class VillenAudioHandler {
   AndroidEqualizer? _equalizer;
   late final AudioPlayer _player;
   ConcatenatingAudioSource? _playlist;
+  bool _isInitialized = false;
   
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
   Stream<Duration> get positionStream => _player.positionStream;
@@ -20,30 +22,94 @@ class VillenAudioHandler {
   Stream<SequenceState?> get sequenceStateStream => _player.sequenceStateStream;
 
   VillenAudioHandler() {
-    // Init Equalizer
-    _equalizer = AndroidEqualizer();
+    _logPlatform();
     
-    // Init PLayer with Pipeline
+    // FIX: Initialize equalizer safely (Android only)
+    if (Platform.isAndroid) {
+      try {
+        _equalizer = AndroidEqualizer();
+        debugPrint("✅ Equalizer initialized (Android)");
+      } catch (e) {
+        debugPrint("⚠️ Equalizer initialization failed: $e");
+        _equalizer = null;
+      }
+    } else {
+      _equalizer = null;
+      final os = Platform.operatingSystem;
+      debugPrint("ℹ️ Equalizer not available on $os");
+    }
+    
+    // Init Player with Pipeline (only if equalizer available)
     _player = AudioPlayer(
-      audioPipeline: AudioPipeline(
-        androidAudioEffects: [_equalizer!],
-      ),
+      audioPipeline: _equalizer != null
+        ? AudioPipeline(androidAudioEffects: [_equalizer!])
+        : null,
     );
     
-    _init();
+    // Initialize async in background - properly handle timing
+    _initAsync();
   }
   
-  void _init() async {
-     // Default empty playlist
-     _playlist = ConcatenatingAudioSource(children: []);
-     
-     try {
-       await _player.setAudioSource(_playlist!);
-       // Enable by default
-       await _equalizer?.setEnabled(true);
-     } catch (e) {
-       debugPrint("Error initializing player: $e");
-     }
+  void _logPlatform() {
+    if (Platform.isAndroid) {
+      debugPrint("📱 Running on: Android");
+    } else if (Platform.isIOS) {
+      debugPrint("🍎 Running on: iOS");
+    } else if (Platform.isLinux) {
+      debugPrint("🐧 Running on: Linux (Desktop)");
+    } else if (Platform.isWindows) {
+      debugPrint("🪟 Running on: Windows");
+    } else if (Platform.isMacOS) {
+      debugPrint("🍎 Running on: macOS");
+    } else {
+      debugPrint("🌐 Running on: ${Platform.operatingSystem}");
+    }
+  }
+  
+  void _initAsync() async {
+    try {
+      // FIX: Create playlist first
+      _playlist = ConcatenatingAudioSource(children: []);
+      
+      // FIX: Wait for player to be ready before setting audio source
+      debugPrint("🔄 Initializing audio system...");
+      
+      await _player.setAudioSource(_playlist!);
+      debugPrint("✅ Audio playlist set");
+      
+      // Enable equalizer if available
+      if (_equalizer != null) {
+        try {
+          await _equalizer!.setEnabled(true);
+          debugPrint("✅ Equalizer enabled");
+        } catch (e) {
+          debugPrint("⚠️ Failed to enable equalizer: $e");
+        }
+      }
+      
+      _isInitialized = true;
+      debugPrint("✅ Audio system fully initialized");
+    } catch (e) {
+      debugPrint("❌ Error initializing audio player: $e");
+      _isInitialized = false;
+    }
+  }
+  
+  /// Wait for audio system to be initialized (especially important on Linux)
+  Future<void> ensureInitialized() async {
+    int retries = 0;
+    const maxRetries = 50; // 5 seconds with 100ms intervals
+    
+    while (!_isInitialized && retries < maxRetries) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      retries++;
+    }
+    
+    if (!_isInitialized) {
+      debugPrint("⚠️ Audio system initialization timeout after ${retries * 100}ms");
+    } else {
+      debugPrint("✅ Audio system initialized in ${retries * 100}ms");
+    }
   }
 
   // --- Equalizer Methods ---
@@ -78,27 +144,52 @@ class VillenAudioHandler {
   /// Start a new queue with this song
   Future<void> playSong(Song song, String streamUrl) async {
     try {
+      // FIX: Ensure audio system is initialized before playing (critical for Linux)
+      if (!_isInitialized) {
+        debugPrint("⏳ Waiting for audio system to initialize...");
+        await ensureInitialized();
+      }
+      
+      // FIX: Validate URL before creating source
+      if (streamUrl.isEmpty) {
+        throw Exception("Stream URL is empty for ${song.title}");
+      }
+      
+      debugPrint("🎵 [AudioHandler] Playing: ${song.title}");
+      
       final source = _createSource(song, streamUrl);
       
-      // Reset playlist
+      // Reset playlist with new song
       _playlist = ConcatenatingAudioSource(children: [source]);
+      
+      // FIX: Await setAudioSource before playing
       await _player.setAudioSource(_playlist!);
-      _player.play();
+      debugPrint("✅ Audio source set: ${song.title}");
+      
+      // FIX: Await play command
+      await _player.play();
+      debugPrint("▶️ Playback started");
       
     } catch (e) {
-      debugPrint("Error playing audio: $e");
+      debugPrint("❌ [AudioHandler] Error playing audio: $e");
+      rethrow;  // Propagate error to UI layer
     }
   }
   
   /// Add a song to the end of the current playlist (for pre-buffering)
   Future<void> addNext(Song song, String streamUrl) async {
     try {
-      final source = _createSource(song, streamUrl);
-      if (_playlist != null) {
-        await _playlist!.add(source);
+      if (_playlist == null) {
+        debugPrint("⚠️ [AudioHandler] Playlist not initialized, creating new one");
+        await playSong(song, streamUrl);
+        return;
       }
+      
+      final source = _createSource(song, streamUrl);
+      await _playlist!.add(source);
+      debugPrint("✅ Song queued: ${song.title}");
     } catch (e) {
-      debugPrint("Error adding next song: $e");
+      debugPrint("❌ [AudioHandler] Error adding song: $e");
     }
   }
 
@@ -112,7 +203,11 @@ class VillenAudioHandler {
           title: song.title,
           artist: song.artist,
           artUri: song.image != null ? Uri.parse(song.image!) : null,
-          extras: {'url': streamUrl},
+          duration: Duration(seconds: song.duration is int ? song.duration as int : 0),
+          extras: {
+            'url': streamUrl,
+            'songId': song.id,
+          },
         ),
       );
   }

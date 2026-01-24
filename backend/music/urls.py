@@ -1,6 +1,6 @@
 from django.urls import path
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 urlpatterns = [
@@ -22,10 +22,11 @@ urlpatterns = [
     
     # Debug
     path("cache/stats/", views.cache_stats, name="cache_stats"),
+    path("csrf/", views.get_csrf_token, name="csrf"),
 
     # Auth & Sync
     path("auth/register/", views.RegisterView.as_view(), name="register"),
-    path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("user/likes/", views.ManageLikesView.as_view(), name="manage_likes"),
+    path("auth/login/", views.CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/logout/", views.LogoutView.as_view(), name="logout"),
+    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),  # FIX #13
 ]

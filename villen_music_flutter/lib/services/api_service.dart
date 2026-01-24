@@ -2,9 +2,11 @@
 // 
 // Core networking layer using Dio.
 // Handles Authentication interceptors, auto-refresh, and API methods.
+// FIX #17: Connection detection for offline mode handling
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:villen_music/core/constants/api_constants.dart';
 import 'package:villen_music/core/constants/global_keys.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
@@ -14,6 +16,10 @@ import 'package:villen_music/services/storage_service.dart';
 class ApiService {
   late Dio _dio;
   final StorageService _storageService;
+  final Connectivity _connectivity = Connectivity();
+  
+  // FIX #17: Track connection state for offline handling
+  bool _isConnected = true;
 
   ApiService(this._storageService) {
     _dio = Dio(
@@ -26,7 +32,38 @@ class ApiService {
     );
 
     _setupInterceptors();
+    _initializeConnectivityListener();  // FIX #17: Initialize connection monitoring
   }
+
+  // FIX #17: Monitor connectivity changes
+  void _initializeConnectivityListener() {
+    _connectivity.onConnectivityChanged.listen((result) {
+      _isConnected = result != ConnectivityResult.none;
+      final statusMsg = _isConnected ? 'Online' : 'Offline';
+      debugPrint('🌐 Connection status: $statusMsg');
+      
+      if (!_isConnected) {
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('📡 You are offline. Using cached data.'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    });
+  }
+
+  // FIX #17: Check connection before making requests
+  Future<bool> _checkConnection() async {
+    final result = await _connectivity.checkConnectivity();
+    _isConnected = result != ConnectivityResult.none;
+    return _isConnected;
+  }
+
+  // FIX #17: Get current connection status
+  bool get isConnected => _isConnected;
 
   void _setupInterceptors() {
     _dio.interceptors.add(
@@ -143,12 +180,42 @@ class ApiService {
     }
   }
 
-  /// Get Stream URL
-  /// Now returns the direct backend proxy URL instead of fetching a JSON value
+  /// Get Stream URL with validation
+  /// Returns the direct URL if available, null if stream not available
   Future<String?> getStreamUrl(String songId, {String quality = '320'}) async {
-     // Return constructing URL directly
-     // The backend now proxies the stream at this endpoint
-     return '${ApiConstants.baseUrl}/stream/$songId/?quality=$quality';
+    try {
+      // FIX #2: Actually request and validate stream URL from backend
+      final response = await _dio.get(
+        '/stream/$songId/',
+        queryParameters: {'quality': quality},
+        options: Options(
+          headers: {'Accept': 'application/json'},  // Request JSON response
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        final url = response.data['url'];
+        if (url != null && url.toString().isNotEmpty) {
+          debugPrint('✅ Stream URL obtained: $songId @ ${response.data['quality']}');
+          return url.toString();
+        }
+      }
+      
+      debugPrint('❌ Stream URL is null or empty for song: $songId');
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('❌ Song not found or stream unavailable: $songId');
+      } else if (e.response?.statusCode == 502 || e.response?.statusCode == 504) {
+        debugPrint('❌ Stream server error (${e.response?.statusCode}) for: $songId');
+      } else {
+        debugPrint('❌ Error fetching stream URL: ${e.message}');
+      }
+      return null;
+    } catch (e) {
+      debugPrint('❌ Unexpected error getting stream: $e');
+      return null;
+    }
   }
 
 

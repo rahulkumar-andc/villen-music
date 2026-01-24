@@ -3,6 +3,7 @@
 /// Initializes services and launches the app.
 library;
 
+import 'dart:async';  // FIX #9: For runZonedGuarded
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -21,55 +22,74 @@ import 'package:villen_music/services/storage_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Initialize Audio Background
-  // This handles the service lifecycle and notification automatically.
-  // We do NOT call AudioService.init() manually.
-  await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.villen.music.channel.audio',
-    androidNotificationChannelName: 'Music Playback',
-    androidNotificationOngoing: true,
-  );
+  // FIX #9: Wrap entire app in error handlers
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+    // In release mode, log to a service instead
+    if (!const bool.fromEnvironment('dart.vm.product')) {
+      print('FlutterError caught: ${details.exceptionAsString()}');
+    }
+  };
 
-  // 2. Initialize Services
-  final storageService = StorageService();
-  await storageService.init();
+  runZonedGuarded(
+    () async {
+      // 1. Initialize Audio Background
+      // This handles the service lifecycle and notification automatically.
+      // We do NOT call AudioService.init() manually.
+      await JustAudioBackground.init(
+        androidNotificationChannelId: 'com.villen.music.channel.audio',
+        androidNotificationChannelName: 'Music Playback',
+        androidNotificationOngoing: true,
+      );
 
-  final apiService = ApiService(storageService);
-  final authService = AuthService(storageService);
-  
-  // 3. Initialize Audio Logic (Wrapper around Just Audio)
-  final audioHandler = VillenAudioHandler(); // Just a logic class now
-  final downloadService = DownloadService(storageService);
-  final sleepTimerService = SleepTimerService(audioHandler);
+      // 2. Initialize Services
+      final storageService = StorageService();
+      await storageService.init();
 
-  // 4. Run App with Providers
-  runApp(
-    MultiProvider(
-      providers: [
-        // Services
-        Provider<StorageService>.value(value: storageService),
-        Provider<ApiService>.value(value: apiService),
-        Provider<AuthService>.value(value: authService),
-        Provider<VillenAudioHandler>.value(value: audioHandler),
-        Provider<DownloadService>.value(value: downloadService),
-        
-        // App State Providers
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(authService, storageService),
+      final apiService = ApiService(storageService);
+      final authService = AuthService(storageService);
+      
+      // 3. Initialize Audio Logic (Wrapper around Just Audio)
+      final audioHandler = VillenAudioHandler(); // Just a logic class now
+      final downloadService = DownloadService(storageService);
+      final sleepTimerService = SleepTimerService(audioHandler);
+
+      // 4. Run App with Providers
+      runApp(
+        MultiProvider(
+          providers: [
+            // Services
+            Provider<StorageService>.value(value: storageService),
+            Provider<ApiService>.value(value: apiService),
+            Provider<AuthService>.value(value: authService),
+            Provider<VillenAudioHandler>.value(value: audioHandler),
+            Provider<DownloadService>.value(value: downloadService),
+            
+            // App State Providers
+            ChangeNotifierProvider(
+              create: (_) => AuthProvider(authService, storageService),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => MusicProvider(storageService, apiService),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => AudioProvider(audioHandler, apiService, downloadService),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => DownloadProvider(downloadService, storageService, apiService),
+            ),
+            ChangeNotifierProvider.value(value: sleepTimerService),
+          ],
+          child: const VillenApp(),
         ),
-        ChangeNotifierProvider(
-          create: (_) => MusicProvider(storageService, apiService),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AudioProvider(audioHandler, apiService, downloadService),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => DownloadProvider(downloadService, storageService, apiService),
-        ),
-        ChangeNotifierProvider.value(value: sleepTimerService),
-      ],
-      child: const VillenApp(),
-    ),
+      );
+    },
+    (error, stackTrace) {
+      // FIX #9: Catch unhandled async errors
+      print('Error caught by zone: $error');
+      print('Stack trace: $stackTrace');
+      // In production, send to error tracking service
+    },
   );
 }
 

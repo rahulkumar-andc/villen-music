@@ -9,7 +9,13 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-ev95r#lyx)(6$7f(n^(-4c36k_$y1tz-d%rnfq=c#5k2dozzsk')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError(
+        "CRITICAL: SECRET_KEY environment variable not set!\n"
+        "Generate one: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\"\n"
+        "Set in .env or environment variables before running"
+    )
 
 # Default to False in production, True locally if env var not set
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
@@ -51,6 +57,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.RequestLoggingMiddleware',  # FIX #21: Request/response logging
+    'core.middleware.AdminRateLimitMiddleware',  # FIX #5: Protect /admin/
     'core.middleware.RateLimitMiddleware',  # Rate limiting
 ]
 
@@ -61,6 +69,22 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    
+    # FIX #20: Additional security headers for production
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # FIX #20: Content Security Policy
+    SECURE_CONTENT_SECURITY_POLICY = {
+        'default-src': ("'self'",),
+        'script-src': ("'self'",),
+        'style-src': ("'self'", "'unsafe-inline'"),
+        'img-src': ("'self'", "data:", "https:"),
+        'font-src': ("'self'",),
+        'connect-src': ("'self'",),
+        'frame-ancestors': ("'none'",),
+    }
 
 ROOT_URLCONF = 'core.urls'
 
@@ -155,20 +179,30 @@ CORS_ALLOW_HEADERS = [
 ]
 
 
-# Logging
+# Logging - FIX #6: Security logging for audit trail
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {funcName} {message}',
             'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'level': 'INFO',
+        },
+        'security_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'WARNING',
         },
     },
     'root': {
@@ -176,13 +210,26 @@ LOGGING = {
         'level': 'INFO',
     },
     'loggers': {
+        'django.security': {
+            'handlers': ['console', 'security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
         'music': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
+        'core.middleware': {
+            'handlers': ['console', 'security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
 }
+
+# Create logs directory if it doesn't exist
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

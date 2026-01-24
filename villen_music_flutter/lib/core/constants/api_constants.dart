@@ -27,7 +27,8 @@ class ApiConstants {
   // User endpoints (require authentication)
   static const String userLikes = '/user/likes/';
   
-  // Timeouts
-  static const Duration connectTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-}
+  // FIX #10: Timeouts - Stream endpoints need shorter timeout (15s max network latency)
+  // General API endpoints use standard timeout (30s for processing)
+  static const Duration streamTimeout = Duration(seconds: 15);  // For stream proxying
+  static const Duration connectTimeout = Duration(seconds: 30); // For general API
+  static const Duration receiveTimeout = Duration(seconds: 30); // For general API

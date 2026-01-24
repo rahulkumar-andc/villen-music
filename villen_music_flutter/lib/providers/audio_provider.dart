@@ -6,12 +6,14 @@ library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:villen_music/models/song.dart';
 import 'package:villen_music/services/download_service.dart';
 import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/services/audio_handler.dart';
+import 'package:villen_music/core/constants/global_keys.dart';
 
 class AudioProvider extends ChangeNotifier {
   final VillenAudioHandler _audioHandler;
@@ -93,14 +95,34 @@ class AudioProvider extends ChangeNotifier {
 
   Future<void> playSong(Song song) async {
     try {
-      final url = await _resolveUrl(song);
-      if (url != null) {
-        // Force play immediately
-        debugPrint("Playing song: ${song.title}");
-        await _audioHandler.playSong(song, url);
+      debugPrint("🎵 Attempting to play: ${song.title}");
+      
+      // FIX #7: Resolve URL with timeout
+      final url = await _resolveUrl(song).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => null,
+      );
+      
+      if (url == null) {
+        _showError("Stream not available for this song");
+        return;
       }
-    } catch (e) {
-      debugPrint("Error playing song: $e");
+      
+      debugPrint("✅ Stream URL obtained: ${song.title}");
+      
+      // FIX #7: Play with timeout
+      await _audioHandler.playSong(song, url).timeout(
+        const Duration(seconds: 10),
+      );
+      
+      debugPrint("▶️ Now playing: ${song.title}");
+      
+    } on TimeoutException catch (e) {
+      debugPrint("⏱️ Timeout: $e");
+      _showError("Network connection too slow. Check your internet.");
+    } on Exception catch (e) {
+      debugPrint("❌ Playback error: $e");
+      _showError("Failed to play song: ${e.toString()}");
     }
   }
 
@@ -117,9 +139,40 @@ class AudioProvider extends ChangeNotifier {
   }
   
   Future<String?> _resolveUrl(Song song) async {
+    try {
+      // Try local first
       final localPath = await _downloadService.getLocalPath(song.id);
-      if (localPath != null) return Uri.file(localPath).toString();
-      return await _apiService.getStreamUrl(song.id);
+      if (localPath != null) {
+        debugPrint("📱 Using local file: ${song.title}");
+        return Uri.file(localPath).toString();
+      }
+      
+      // Fall back to stream
+      debugPrint("🌐 Requesting stream for: ${song.title}");
+      final url = await _apiService.getStreamUrl(song.id);
+      
+      if (url == null) {
+        debugPrint("❌ No stream URL available from API");
+      }
+      
+      return url;
+    } catch (e) {
+      debugPrint("❌ Error resolving URL: $e");
+      return null;
+    }
+  }
+  
+  void _showError(String message) {
+    // Show snackbar to user
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+      ),
+    );
   }
 
   void togglePlayPause() {

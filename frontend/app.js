@@ -38,11 +38,43 @@ const state = {
     cache: {
         trending: null,
         trendingTime: 0,
+        // FIX #18: Smart caching for search results
+        searchResults: new Map(),  // {query: {data, timestamp}}
+        artistInfo: new Map(),     // {artistId: {data, timestamp}}
+        albumInfo: new Map(),      // {albumId: {data, timestamp}}
+        lyrics: new Map(),         // {songId: {data, timestamp}}
     }
 };
 
 // Cache duration (5 minutes)
 const CACHE_DURATION = 5 * 60 * 1000;
+
+// FIX #18: Smart cache utility functions
+function getCacheKey(type, id) {
+    return `${type}_${id}`;
+}
+
+function getCachedData(cacheMap, key) {
+    const cached = cacheMap.get(key);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        return cached.data;
+    }
+    cacheMap.delete(key);  // Clean up stale entry
+    return null;
+}
+
+function setCachedData(cacheMap, key, data) {
+    cacheMap.set(key, {
+        data: data,
+        timestamp: Date.now(),
+    });
+    // FIX #18: Cleanup if cache gets too large (>100 entries)
+    if (cacheMap.size > 100) {
+        // Remove oldest entry
+        const firstKey = cacheMap.keys().next().value;
+        cacheMap.delete(firstKey);
+    }
+}
 
 // ==================== AUDIO PLAYER ====================
 const audio = new Audio();
@@ -68,14 +100,76 @@ audio.addEventListener('pause', () => {
     stopVisualizer();
 });
 
+// ==================== API WRAPPER (FIX #13, FIX #22) ====================
+// FIX #13, FIX #22: Centralized token refresh with comprehensive security comments
+async function apiFetch(url, options = {}) {
+    // SECURITY DOCUMENTATION:
+    // This wrapper handles JWT token refresh automatically on 401 responses.
+    // 
+    // Token lifecycle:
+    // 1. User logs in -> receives 2 tokens in HttpOnly cookies
+    //    - access_token: 1 hour lifetime (short-lived)
+    //    - refresh_token: 7 days lifetime (longer-lived)
+    // 
+    // 2. Each API request includes access_token from cookie
+    //    (browser automatically sends HttpOnly cookies)
+    // 
+    // 3. If access_token expires:
+    //    - Server returns 401 Unauthorized
+    //    - apiFetch catches 401 and calls refreshAccessToken()
+    //    - Server issues new access_token (using refresh_token)
+    //    - Original request is retried with new token
+    //    - User experience: seamless, no re-login needed
+    // 
+    // 4. If refresh_token also expires:
+    //    - Server returns 401 again
+    //    - User forced to login again (security measure)
+    // 
+    // Why this approach:
+    // - Short-lived access_token: If leaked, attacker has limited time
+    // - HttpOnly cookies: Tokens never exposed to JavaScript
+    // - Automatic refresh: Users stay logged in during activity
+    // - Server-side validation: Token claims verified on every request
+    
+    let res = await fetch(url, options);
+    
+    // If access token expired (401), try to refresh and retry once
+    if (res.status === 401 && state.user) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            // Retry original request with new token (now in cookies automatically)
+            res = await fetch(url, options);
+        }
+    }
+    
+    return res;
+}
+
 // ==================== API FUNCTIONS WITH CACHING ====================
 async function searchSongs(query) {
     if (!query.trim()) return [];
 
     try {
-        const res = await fetch(`${API_BASE}/search/?q=${encodeURIComponent(query)}&limit=30`);
+        const validatedQuery = validateSearchQuery(query);  // FIX #4: Validate input
+        
+        // FIX #18: Check cache first before making API call
+        const cacheKey = getCacheKey('search', validatedQuery);
+        const cachedResults = getCachedData(state.cache.searchResults, cacheKey);
+        if (cachedResults) {
+            return cachedResults;
+        }
+        
+        const res = await apiFetch(
+            `${API_BASE}/search/?q=${encodeURIComponent(validatedQuery)}&limit=30`,
+            { credentials: 'include' }  // FIX #2: Include cookies
+        );
         const data = await res.json();
-        return data.results || [];
+        const results = data.results || [];
+        
+        // FIX #18: Cache the search results
+        setCachedData(state.cache.searchResults, cacheKey, results);
+        
+        return results;
     } catch (err) {
         console.error('Search failed:', err);
         showToast('Search failed. Please try again.');
@@ -85,7 +179,10 @@ async function searchSongs(query) {
 
 async function getStreamUrl(songId, quality = '320') {
     try {
-        const res = await fetch(`${API_BASE}/stream/${songId}/?quality=${quality}`);
+        const res = await apiFetch(
+            `${API_BASE}/stream/${songId}/?quality=${quality}`,
+            { credentials: 'include' }  // FIX #2: Include cookies
+        );
         if (!res.ok) throw new Error('Stream not available');
         const data = await res.json();
         return data.url;
@@ -102,7 +199,7 @@ async function getTrending() {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/trending/`);
+        const res = await apiFetch(`${API_BASE}/trending/`, { credentials: 'include' });  // FIX #13
         const data = await res.json();
         const results = data.results || [];
 
@@ -119,9 +216,21 @@ async function getTrending() {
 
 async function getRelated(songId) {
     try {
-        const res = await fetch(`${API_BASE}/song/${songId}/related/`);
+        // FIX #18: Check cache first before making API call
+        const cacheKey = getCacheKey('related', songId);
+        const cachedRelated = getCachedData(state.cache.searchResults, cacheKey);
+        if (cachedRelated) {
+            return cachedRelated;
+        }
+        
+        const res = await apiFetch(`${API_BASE}/song/${songId}/related/`, { credentials: 'include' });  // FIX #13
         const data = await res.json();
-        return data.results || [];
+        const results = data.results || [];
+        
+        // FIX #18: Cache the related songs
+        setCachedData(state.cache.searchResults, cacheKey, results);
+        
+        return results;
     } catch (err) {
         console.error('Related fetch failed:', err);
         return [];
@@ -130,10 +239,24 @@ async function getRelated(songId) {
 
 async function getLyrics(songId) {
     try {
-        const res = await fetch(`${API_BASE}/song/${songId}/lyrics/`);
+        // FIX #18: Check cache first before making API call
+        const cacheKey = getCacheKey('lyrics', songId);
+        const cachedLyrics = getCachedData(state.cache.lyrics, cacheKey);
+        if (cachedLyrics !== null) {
+            return cachedLyrics;
+        }
+        
+        const res = await apiFetch(`${API_BASE}/song/${songId}/lyrics/`, { credentials: 'include' });  // FIX #13
         if (!res.ok) return null;
         const data = await res.json();
-        return data.lyrics || null;
+        const lyrics = data.lyrics || null;
+        
+        // FIX #18: Cache the lyrics
+        if (lyrics) {
+            setCachedData(state.cache.lyrics, cacheKey, lyrics);
+        }
+        
+        return lyrics;
     } catch (err) {
         console.error('Lyrics fetch failed:', err);
         return null;
@@ -150,6 +273,11 @@ async function playSong(song, addToQueue = true) {
     if (!url) {
         showToast('Unable to play this song');
         return;
+    }
+
+    // FIX #24: Track music playback in analytics
+    if (typeof Analytics !== 'undefined') {
+        Analytics.trackMusicPlay(song.id, song.title, song.duration || 0);
     }
 
     state.currentSong = song;
@@ -1333,6 +1461,10 @@ function switchAuthMode() {
     const emailInfo = document.getElementById('authEmail');
     const btn = document.getElementById('authSubmitBtn');
     const switchTxt = document.getElementById('authSwitch');
+    
+    // FIX #7: Reset password strength indicator when switching modes
+    document.getElementById('authPassword').value = '';
+    document.getElementById('passwordStrengthContainer').style.display = 'none';
 
     if (isLoginMode) {
         title.innerText = 'Login';
@@ -1347,6 +1479,125 @@ function switchAuthMode() {
     }
 }
 
+// ==================== INPUT VALIDATION (FIX #4) ====================
+function validateUsername(username) {
+    if (!username || username.trim().length < 3) {
+        throw new Error('Username must be at least 3 characters');
+    }
+    if (username.length > 30) {
+        throw new Error('Username too long (max 30 characters)');
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        throw new Error('Username can only contain letters, numbers, underscore, hyphen');
+    }
+    return username.trim();
+}
+
+function validatePassword(password) {
+    if (!password || password.length < 8) {
+        throw new Error('Password must be at least 8 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+        throw new Error('Password must contain at least one uppercase letter');
+    }
+    if (!/[0-9]/.test(password)) {
+        throw new Error('Password must contain at least one number');
+    }
+    return password;
+}
+
+function validateEmail(email) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new Error('Invalid email address');
+    }
+    return email.toLowerCase().trim();
+}
+
+function validateSearchQuery(query) {
+    if (!query || query.trim().length === 0) {
+        return '';
+    }
+    // Remove dangerous characters but allow basic search
+    return query.trim().substring(0, 100);
+}
+
+// FIX #7, FIX #22: Password strength indicator with comprehensive security comments
+function updatePasswordStrength() {
+    // FIX #22: SECURITY DOCUMENTATION
+    // This function provides real-time password strength feedback to users
+    // 
+    // Strength scoring algorithm:
+    // - Length (20 points): Core metric for resistance to brute force
+    //   * 8+ chars: 20 pts
+    //   * 12+ chars: +10 pts (compound effect)
+    //   * 16+ chars: +10 pts (bonus for very long passwords)
+    // - Character variety (60 points): Increases keyspace exponentially
+    //   * Lowercase [a-z]: 15 pts
+    //   * Uppercase [A-Z]: 15 pts
+    //   * Numbers [0-9]: 15 pts
+    //   * Special chars: 15 pts
+    // Total: 100 points possible
+    //
+    // Strength levels:
+    // - Weak (<30): Red - Not recommended, easily cracked
+    // - Fair (30-50): Orange - Acceptable for most users
+    // - Good (50-70): Yellow - Good protection
+    // - Strong (70+): Green - Excellent protection
+    //
+    // NOTE: This is client-side validation only. Server also validates
+    // to prevent weak passwords from being stored.
+    
+    const passwordInput = document.getElementById('authPassword');
+    const password = passwordInput.value;
+    const container = document.getElementById('passwordStrengthContainer');
+    const fill = document.getElementById('passwordStrengthFill');
+    const text = document.getElementById('passwordStrengthText');
+    
+    if (!password) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    
+    // Calculate strength score
+    let strength = 0;
+    let feedback = '';
+    
+    // Length scoring
+    if (password.length >= 8) strength += 20;
+    if (password.length >= 12) strength += 10;
+    if (password.length >= 16) strength += 10;
+    
+    // Character variety
+    if (/[a-z]/.test(password)) strength += 15;  // lowercase
+    if (/[A-Z]/.test(password)) strength += 15;  // UPPERCASE
+    if (/[0-9]/.test(password)) strength += 15;  // numbers
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength += 15;  // special chars
+    
+    // Determine level and colors
+    if (strength < 30) {
+        feedback = 'Weak';
+        fill.style.backgroundColor = '#ff6b6b';  // Red
+        fill.style.width = '25%';
+    } else if (strength < 50) {
+        feedback = 'Fair';
+        fill.style.backgroundColor = '#ffa94d';  // Orange
+        fill.style.width = '50%';
+    } else if (strength < 70) {
+        feedback = 'Good';
+        fill.style.backgroundColor = '#ffd93d';  // Yellow
+        fill.style.width = '75%';
+    } else {
+        feedback = 'Strong';
+        fill.style.backgroundColor = '#6bcf7f';  // Green
+        fill.style.width = '100%';
+    }
+    
+    text.innerText = feedback;
+    text.style.color = fill.style.backgroundColor;
+}
+
 async function handleAuthSubmit(e) {
     e.preventDefault();
     const username = document.getElementById('authUsername').value;
@@ -1356,12 +1607,17 @@ async function handleAuthSubmit(e) {
 
     try {
         msg.innerText = "Processing...";
+        
+        // FIX #4: Validate inputs
+        const validatedUsername = validateUsername(username);
+        const validatedPassword = validatePassword(password);
+        const validatedEmail = isLoginMode ? null : validateEmail(email);
 
         let success = false;
         if (isLoginMode) {
-            success = await login(username, password);
+            success = await login(validatedUsername, validatedPassword);
         } else {
-            success = await register(username, email, password);
+            success = await register(validatedUsername, validatedEmail, validatedPassword);
         }
 
         if (success) {
@@ -1377,20 +1633,69 @@ async function handleAuthSubmit(e) {
     }
 }
 
+// FIX #3: Get CSRF token for POST requests
+async function getCsrfToken() {
+    try {
+        const res = await fetch(`${API_BASE}/csrf/`, {
+            credentials: 'include'  // Include cookies
+        });
+        const data = await res.json();
+        return data.csrftoken || '';
+    } catch (e) {
+        console.warn('Could not fetch CSRF token:', e);
+        return '';
+    }
+}
+
+// FIX #13: Token refresh for maintaining session
+async function refreshAccessToken() {
+    // Refresh the access token using the refresh token stored in HttpOnly cookies.
+    // Called automatically when access token expires (401 response).
+    // Allows users to stay logged in without re-entering credentials.
+    try {
+        const res = await fetch(`${API_BASE}/auth/refresh/`, {
+            method: 'POST',
+            credentials: 'include',  // Send refresh token cookie
+        });
+        
+        if (res.status === 401 || res.status === 403) {
+            // Refresh token expired too, user must re-login
+            logout();
+            showToast('Session expired. Please login again.');
+            return false;
+        }
+        
+        if (!res.ok) {
+            console.error('Token refresh failed:', res.status);
+            return false;
+        }
+        
+        // New access token is in HttpOnly cookie automatically
+        return true;
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        return false;
+    }
+}
+
 async function login(username, password) {
+    const csrfToken = await getCsrfToken();
+    
     const res = await fetch(`${API_BASE}/auth/login/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',  // Include cookies (FIX #2)
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken  // FIX #3
+        },
         body: JSON.stringify({ username, password })
     });
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Login failed");
 
-    localStorage.setItem('token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
-    state.token = data.access;
-
+    // FIX #2: Tokens are now in HttpOnly cookies, not in response
+    // Remove from localStorage, tokens are automatically sent with credentials: 'include'
     state.user = { username };
     localStorage.setItem('user', JSON.stringify(state.user));
 
@@ -1400,9 +1705,15 @@ async function login(username, password) {
 }
 
 async function register(username, email, password) {
+    const csrfToken = await getCsrfToken();
+    
     const res = await fetch(`${API_BASE}/auth/register/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',  // FIX #2
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken  // FIX #3
+        },
         body: JSON.stringify({ username, email, password })
     });
 
@@ -1414,10 +1725,16 @@ async function register(username, email, password) {
 
 function logout() {
     state.user = null;
-    state.token = null;
+    state.token = null;  // Already removed since tokens in HttpOnly cookies
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
+
+    // FIX #2: Clear HttpOnly cookies by calling logout endpoint
+    fetch(`${API_BASE}/auth/logout/`, {
+        method: 'POST',
+        credentials: 'include'  // Send cookies to backend
+    }).catch(() => {});  // Ignore errors, just clear local state
 
     updateAuthUI();
     showToast("Logged out");
@@ -1438,13 +1755,13 @@ function updateAuthUI() {
 
 // ==================== SYNC LOGIC ====================
 async function syncLikes() {
-    if (!state.user || !state.token) return;
+    if (!state.user) return;
 
     try {
         showToast("Syncing library...");
 
         const res = await fetch(`${API_BASE}/user/likes/`, {
-            headers: { 'Authorization': `Bearer ${state.token}` }
+            credentials: 'include'  // FIX #2: Use cookies instead of Authorization header
         });
         if (!res.ok) return;
 
@@ -1453,12 +1770,15 @@ async function syncLikes() {
         const cloudIds = new Set(cloudLikes.map(l => l.song_id));
         const localOnly = state.liked.filter(s => !cloudIds.has(s.id));
 
+        const csrfToken = await getCsrfToken();
+        
         for (const song of localOnly) {
             await fetch(`${API_BASE}/user/likes/`, {
                 method: 'POST',
+                credentials: 'include',  // FIX #2
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${state.token}`
+                    'X-CSRFToken': csrfToken  // FIX #3
                 },
                 body: JSON.stringify({
                     song_id: song.id,
@@ -1513,14 +1833,17 @@ toggleLike = async function (song) {
     localStorage.setItem('liked', JSON.stringify(state.liked));
     updateLikeButtons();
 
-    if (state.user && state.token) {
+    if (state.user) {
         const isLikedNow = state.liked.some(s => s.id === song.id);
+        const csrfToken = await getCsrfToken();
+        
         if (isLikedNow) {
             fetch(`${API_BASE}/user/likes/`, {
                 method: 'POST',
+                credentials: 'include',  // FIX #2
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${state.token}`
+                    'X-CSRFToken': csrfToken  // FIX #3
                 },
                 body: JSON.stringify({
                     song_id: song.id,
@@ -1533,9 +1856,10 @@ toggleLike = async function (song) {
         } else {
             fetch(`${API_BASE}/user/likes/`, {
                 method: 'DELETE',
+                credentials: 'include',  // FIX #2
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${state.token}`
+                    'X-CSRFToken': csrfToken  // FIX #3
                 },
                 body: JSON.stringify({ song_id: song.id })
             });

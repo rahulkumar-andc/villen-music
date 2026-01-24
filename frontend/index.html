@@ -6,6 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VILLEN Music</title>
   <meta name="description" content="VILLEN - Your Premium Personal Music Player">
+  <meta name="theme-color" content="#ff6b35">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VILLEN Music">
+  <!-- FIX #23: PWA Manifest for installable web app -->
+  <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -470,7 +477,16 @@
       <h2 id="authTitle">Login</h2>
       <form id="authForm" onsubmit="handleAuthSubmit(event)">
         <input type="text" id="authUsername" placeholder="Username" required>
-        <input type="password" id="authPassword" placeholder="Password" required>
+        <div style="position: relative; width: 100%;">
+          <input type="password" id="authPassword" placeholder="Password" required oninput="updatePasswordStrength()">
+          <!-- FIX #7: Password strength indicator -->
+          <div id="passwordStrengthContainer" style="display: none; margin-top: 8px;">
+            <div id="passwordStrengthBar" style="height: 6px; background-color: #e0e0e0; border-radius: 3px; overflow: hidden; width: 100%;">
+              <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s ease, background-color 0.3s ease; background-color: #ff6b6b;"></div>
+            </div>
+            <p id="passwordStrengthText" style="font-size: 12px; margin-top: 4px; color: #ff6b6b; font-weight: 500;">Weak</p>
+          </div>
+        </div>
         <input type="email" id="authEmail" placeholder="Email (Register only)" style="display: none;">
         <button type="submit" id="authSubmitBtn">Login</button>
       </form>
@@ -502,6 +518,8 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast"></div>
 
+  <!-- FIX #24: Analytics script for tracking user engagement -->
+  <script src="analytics.js"></script>
   <script src="app.js"></script>
 
 </body>
