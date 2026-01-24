@@ -105,19 +105,17 @@ class AuthService {
     }
   }
 
-  /// Register new user
-  Future<bool> register(String username, String email, String password) async {
+  /// Register new user (Username + Password only)
+  Future<bool> register(String username, String password) async {
     try {
-      // FIX #8: Validate all inputs before sending
+      // FIX #8: Validate inputs before sending
       final validUsername = _validateUsername(username);
-      final validEmail = _validateEmail(email);
       final validPassword = _validatePassword(password);
       
       final response = await _dio.post(
         ApiConstants.register,
         data: {
           'username': validUsername,
-          'email': validEmail,
           'password': validPassword,
         },
       );

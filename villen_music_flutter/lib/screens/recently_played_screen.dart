@@ -72,7 +72,11 @@ class RecentlyPlayedScreen extends StatelessWidget {
               return SongTile(
                 song: song,
                 isPlaying: audio.currentSong?.id == song.id,
-                onTap: () => audio.playSong(song),
+                onTap: () {
+                  // FIX: Set entire recent list as queue
+                  music.setQueue(music.recentlyPlayed, startIndex: index);
+                  audio.playSong(song);
+                },
               );
             },
           );

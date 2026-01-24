@@ -20,19 +20,19 @@ import 'package:villen_music/services/sleep_timer_service.dart';
 import 'package:villen_music/services/storage_service.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // FIX #9: Wrap entire app in error handlers
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.dumpErrorToConsole(details);
-    // In release mode, log to a service instead
-    if (!const bool.fromEnvironment('dart.vm.product')) {
-      print('FlutterError caught: ${details.exceptionAsString()}');
-    }
-  };
-
   runZonedGuarded(
     () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // FIX #9: Wrap entire app in error handlers
+      FlutterError.onError = (FlutterErrorDetails details) {
+        FlutterError.dumpErrorToConsole(details);
+        // In release mode, log to a service instead
+        if (!const bool.fromEnvironment('dart.vm.product')) {
+          print('FlutterError caught: ${details.exceptionAsString()}');
+        }
+      };
+
       // 1. Initialize Audio Background
       // This handles the service lifecycle and notification automatically.
       // We do NOT call AudioService.init() manually.

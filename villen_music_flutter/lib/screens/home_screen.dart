@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:villen_music/models/song.dart';
 import 'package:villen_music/providers/audio_provider.dart';
+import 'package:villen_music/providers/music_provider.dart';
 import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/widgets/song_tile.dart';
 
@@ -121,12 +122,16 @@ class _HomeTabState extends State<HomeTab> {
                 }
                 
                 final song = songs[index - 1];
-                return Consumer<AudioProvider>(
-                  builder: (context, audio, _) {
+                return Consumer2<AudioProvider, MusicProvider>(
+                  builder: (context, audio, music, _) {
                     return SongTile(
                       song: song,
                       isPlaying: audio.currentSong?.id == song.id,
-                      onTap: () => audio.playSong(song),
+                      onTap: () {
+                        // FIX: Set entire list as queue
+                        music.setQueue(songs, startIndex: index - 1);
+                        audio.playSong(song);
+                      },
                     );
                   },
                 );

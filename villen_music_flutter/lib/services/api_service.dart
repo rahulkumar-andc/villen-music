@@ -180,6 +180,22 @@ class ApiService {
     }
   }
 
+  /// Get Related Songs
+  Future<List<Song>> getRelatedSongs(String songId, {int limit = 20}) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.songRelated(songId),
+        queryParameters: {'limit': limit},
+      );
+      
+      final List results = response.data['results'] ?? [];
+      return results.map((json) => Song.fromJson(json)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+
   /// Get Stream URL
   /// Returns the proxy URL so the backend handles the stream connection.
   Future<String?> getStreamUrl(String songId, {String quality = '320'}) async {

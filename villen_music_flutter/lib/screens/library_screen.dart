@@ -141,7 +141,7 @@ class LibraryScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 180,
+                height: 200,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),

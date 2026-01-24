@@ -132,50 +132,58 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
           ],
           
           // Options
-          ...(_options.map((minutes) => ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryPurple.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.timer_outlined,
-                color: AppTheme.primaryPurple,
-                size: 20,
-              ),
+          // Options
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                ...(_options.map((minutes) => ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryPurple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.timer_outlined,
+                      color: AppTheme.primaryPurple,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text('$minutes minutes'),
+                  onTap: () {
+                    timerService.setTimer(minutes);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Sleep timer set for $minutes minutes')),
+                    );
+                  },
+                ))),
+                
+                // End of current track option
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryPurple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.music_off_rounded,
+                      color: AppTheme.primaryPurple,
+                      size: 20,
+                    ),
+                  ),
+                  title: const Text('End of current song'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Will stop after current song (Coming Soon)')),
+                    );
+                  },
+                ),
+              ],
             ),
-            title: Text('$minutes minutes'),
-            onTap: () {
-              timerService.setTimer(minutes);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Sleep timer set for $minutes minutes')),
-              );
-            },
-          ))),
-          
-          // End of current track option
-          ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryPurple.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.music_off_rounded,
-                color: AppTheme.primaryPurple,
-                size: 20,
-              ),
-            ),
-            title: const Text('End of current song'),
-            onTap: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Will stop after current song (Coming Soon)')),
-              );
-            },
           ),
           
           const SizedBox(height: 16),

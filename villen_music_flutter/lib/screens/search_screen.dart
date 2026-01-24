@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:villen_music/models/song.dart';
 import 'package:villen_music/providers/audio_provider.dart';
+import 'package:villen_music/providers/music_provider.dart';
 import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/services/storage_service.dart';
 import 'package:villen_music/widgets/song_tile.dart';
@@ -235,12 +236,16 @@ class _SearchScreenState extends State<SearchScreen> {
       itemCount: _results!.length,
       itemBuilder: (context, index) {
         final song = _results![index];
-        return Consumer<AudioProvider>(
-          builder: (context, audio, _) {
+        return Consumer2<AudioProvider, MusicProvider>(
+          builder: (context, audio, music, _) {
             return SongTile(
               song: song,
               isPlaying: audio.currentSong?.id == song.id,
-              onTap: () => audio.playSong(song),
+              onTap: () {
+                // FIX: Set entire result list as queue
+                music.setQueue(_results!, startIndex: index);
+                audio.playSong(song);
+              },
             );
           },
         );

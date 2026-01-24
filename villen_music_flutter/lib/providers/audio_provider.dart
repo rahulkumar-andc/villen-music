@@ -152,6 +152,12 @@ class AudioProvider extends ChangeNotifier {
       
       debugPrint("▶️ Now playing: ${song.title}");
       
+      // FIX: Pre-buffer next song to avoid empty queue in System UI
+      if (_musicProvider.nextSong != null) {
+        debugPrint("⏭️ Pre-buffering next song: ${_musicProvider.nextSong!.title}");
+        bufferNext(_musicProvider.nextSong!);
+      }
+      
     } on TimeoutException catch (e) {
       debugPrint("⏱️ Timeout: $e");
       _showError("Network connection too slow. Check your internet.");
