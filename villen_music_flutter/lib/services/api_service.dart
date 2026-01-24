@@ -180,42 +180,16 @@ class ApiService {
     }
   }
 
-  /// Get Stream URL with validation
-  /// Returns the direct URL if available, null if stream not available
+  /// Get Stream URL
+  /// Returns the proxy URL so the backend handles the stream connection.
   Future<String?> getStreamUrl(String songId, {String quality = '320'}) async {
-    try {
-      // FIX #2: Actually request and validate stream URL from backend
-      final response = await _dio.get(
-        '/stream/$songId/',
-        queryParameters: {'quality': quality},
-        options: Options(
-          headers: {'Accept': 'application/json'},  // Request JSON response
-        ),
-      );
-      
-      if (response.statusCode == 200) {
-        final url = response.data['url'];
-        if (url != null && url.toString().isNotEmpty) {
-          debugPrint('✅ Stream URL obtained: $songId @ ${response.data['quality']}');
-          return url.toString();
-        }
-      }
-      
-      debugPrint('❌ Stream URL is null or empty for song: $songId');
-      return null;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        debugPrint('❌ Song not found or stream unavailable: $songId');
-      } else if (e.response?.statusCode == 502 || e.response?.statusCode == 504) {
-        debugPrint('❌ Stream server error (${e.response?.statusCode}) for: $songId');
-      } else {
-        debugPrint('❌ Error fetching stream URL: ${e.message}');
-      }
-      return null;
-    } catch (e) {
-      debugPrint('❌ Unexpected error getting stream: $e');
-      return null;
-    }
+    // Return the proxy URL directly. 
+    // The player will connect to this, and the backend (views.py) will proxy the audio.
+    // This avoids issues where the client device cannot reach the CDN or handles headers incorrectly.
+    final uri = Uri.parse('${ApiConstants.baseUrl}/stream/$songId/').replace(
+      queryParameters: {'quality': quality}
+    );
+    return uri.toString();
   }
 
 
