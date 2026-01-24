@@ -32,3 +32,4 @@ class ApiConstants {
   static const Duration streamTimeout = Duration(seconds: 15);  // For stream proxying
   static const Duration connectTimeout = Duration(seconds: 30); // For general API
   static const Duration receiveTimeout = Duration(seconds: 30); // For general API
+}

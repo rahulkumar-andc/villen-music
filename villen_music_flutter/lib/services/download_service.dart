@@ -137,6 +137,9 @@ class DownloadService {
       
     } catch (e) {
       debugPrint("Download failed after retries: $e");
+      return null;
+    }
+  }
 
   /// Check if song is downloaded
   Future<String?> getLocalPath(String songId) async {
