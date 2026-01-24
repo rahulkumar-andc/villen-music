@@ -1,0 +1,50 @@
+╔════════════════════════════════════════════════════════════════╗
+║         VILLEN MUSIC - QUICK BUILD COMMANDS                   ║
+╚════════════════════════════════════════════════════════════════╝
+
+ANDROID APK:
+────────────
+cd /home/villen/Desktop/villen-music/villen_music_flutter
+flutter build apk --release --split-per-abi
+# Output: build/app/outputs/flutter-apk/*.apk
+
+LINUX .DEB:
+───────────
+cd /home/villen/Desktop/villen-music/app-release/deb
+dpkg-deb --build villen-music villen-music_1.0.0_amd64.deb
+# Output: villen-music_1.0.0_amd64.deb
+
+WINDOWS .EXE:
+─────────────
+(Run on Windows)
+cd villen_music_flutter
+flutter build windows --release
+# Output: build\windows\runner\Release\villen_music_flutter.exe
+
+MACOS .APP:
+───────────
+(Run on macOS)
+cd villen_music_flutter
+flutter build macos --release
+# Output: build/macos/Build/Products/Release/villen_music_flutter.app
+
+WEB:
+────
+cd /home/villen/Desktop/villen-music/frontend
+npm run build
+# Output: dist/ folder
+
+════════════════════════════════════════════════════════════════════
+
+DIRECTORY: /home/villen/Desktop/villen-music/app-release
+
+✅ = Ready to build
+⏳ = Structure ready, requires native environment
+
+✅ APK      - Ready
+✅ .deb     - Ready  
+⏳ .exe     - Structure ready (needs Windows)
+⏳ .app     - Structure ready (needs macOS)
+✅ Web      - Ready
+
+For detailed guide: cat BUILD_INSTRUCTIONS.md

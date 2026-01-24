@@ -1,0 +1,3 @@
+#!/bin/bash
+chmod +x /usr/local/bin/villen-music
+echo "VILLEN Music installed successfully!"

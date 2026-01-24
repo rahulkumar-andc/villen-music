@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VILLEN Music
+GenericName=Music Player
+Comment=Professional Music Streaming Application
+Icon=villen-music
+Exec=villen-music
+Terminal=false
+Categories=Audio;Music;Player;

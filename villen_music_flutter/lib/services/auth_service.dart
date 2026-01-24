@@ -125,7 +125,6 @@ class AuthService {
     } catch (e) {
       rethrow;  // FIX #8: Propagate validation errors to UI
     }
-    }
   }
 
   /// Logout

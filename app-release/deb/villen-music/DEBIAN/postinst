@@ -1,0 +1,4 @@
+#!/bin/bash
+chmod +x /usr/local/bin/villen-music
+update-desktop-database /usr/share/applications/ 2>/dev/null || true
+echo "✅ VILLEN Music installed!"

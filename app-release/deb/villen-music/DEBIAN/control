@@ -1,0 +1,8 @@
+Package: villen-music
+Version: 1.0.0
+Architecture: amd64
+Maintainer: Villen Team <dev@villen.com>
+Depends: libssl3, libfontconfig1
+Homepage: https://github.com/rahulkumar-andc/villen-music
+Description: Professional Music Streaming Application
+ Feature-rich music streaming app with trending songs, search, high-quality audio streaming, user authentication, and offline playback support.

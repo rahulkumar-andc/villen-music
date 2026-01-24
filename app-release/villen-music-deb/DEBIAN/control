@@ -1,0 +1,12 @@
+Package: villen-music
+Version: 1.0.0
+Architecture: amd64
+Maintainer: Villen Team <villen@example.com>
+Description: VILLEN Music - Professional Music Streaming Application
+ A feature-rich music streaming application with support for:
+ - Trending songs
+ - Song search and discovery
+ - High-quality audio streaming
+ - User authentication
+ - Playlist management
+ - Offline playback

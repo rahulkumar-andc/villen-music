@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=VILLEN Music
+Comment=Music Streaming Application
+Icon=villen-music
+Exec=villen-music
+Terminal=false
+Categories=Audio;Music;Player;
