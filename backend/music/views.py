@@ -66,10 +66,11 @@ def search_songs(request):
 @require_GET
 def stream_song(request, song_id):
     """
-    Get stream URL with explicit content negotiation.
+    Stream audio by proxying from upstream CDN.
     
-    FIX #6: Always return JSON first, let client decide if they want proxy or direct URL
-    This prevents content-type confusion and gives better error messages.
+    FIX #23: Always proxy the audio stream.
+    This ensures mobile players receive audio data, not JSON.
+    The Flutter app calls this endpoint directly and expects audio bytes.
     """
     preferred_quality = request.GET.get("quality", "320")
     
@@ -77,7 +78,7 @@ def stream_song(request, song_id):
     if not service._validate_id(song_id):
         return JsonResponse({"error": "Invalid song ID"}, status=400)
     
-    # Get stream URL
+    # Get stream URL from upstream
     stream_url = service.get_stream(song_id, preferred_quality)
     if not stream_url:
         logger.warning(f"Stream not available for song: {song_id}")
@@ -86,29 +87,20 @@ def stream_song(request, song_id):
             status=404
         )
     
-    # FIX #6: Check Accept header
-    accept_header = request.headers.get("Accept", "").lower()
-    if "application/json" in accept_header or request.GET.get("format") == "json":
-        # Return JSON with URL (for API clients like Flutter)
-        return JsonResponse({
-            "url": stream_url,
-            "quality": preferred_quality,
-            "songId": song_id,
-        })
-    
-    # Default: Proxy the audio stream (for web players)
+    # Always proxy the audio stream
     try:
         # Forward Range header for seeking support
-        headers = {}
+        headers = {
+            "User-Agent": "VILLEN-Music/1.0",
+        }
         if "HTTP_RANGE" in request.META:
             headers["Range"] = request.META["HTTP_RANGE"]
 
-        # FIX #10: 15s timeout for stream proxying
-        # This balances between slow networks and quick failure detection
+        # Stream with generous timeout for slow connections
         upstream_response = requests.get(
             stream_url, 
             stream=True, 
-            timeout=15,  # Stream-specific timeout
+            timeout=30,
             headers=headers
         )
         upstream_response.raise_for_status()
@@ -119,7 +111,9 @@ def stream_song(request, song_id):
             status=upstream_response.status_code
         )
         
-        # Forward safe headers
+        # Forward important headers for seeking and caching
+        if "Content-Length" in upstream_response.headers:
+            response["Content-Length"] = upstream_response.headers["Content-Length"]
         for header in ["Content-Range", "Accept-Ranges", "Cache-Control", "ETag"]:
             if header in upstream_response.headers:
                 response[header] = upstream_response.headers[header]
