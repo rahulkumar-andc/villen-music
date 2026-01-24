@@ -156,6 +156,7 @@ class VillenAudioHandler {
       }
       
       debugPrint("🎵 [AudioHandler] Playing: ${song.title}");
+      debugPrint("📡 Stream URL: $streamUrl");
       
       final source = _createSource(song, streamUrl);
       
@@ -170,8 +171,9 @@ class VillenAudioHandler {
       await _player.play();
       debugPrint("▶️ Playback started");
       
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint("❌ [AudioHandler] Error playing audio: $e");
+      debugPrint("🔍 Error details: ${e.toString()}");
       rethrow;  // Propagate error to UI layer
     }
   }
@@ -194,9 +196,29 @@ class VillenAudioHandler {
   }
 
   AudioSource _createSource(Song song, String streamUrl) {
+    try {
+      // Validate URL format
+      if (streamUrl.isEmpty) {
+        throw Exception("Empty stream URL");
+      }
+      
+      // Ensure URL is valid and properly formatted
+      Uri uri;
+      if (streamUrl.startsWith('http://') || streamUrl.startsWith('https://')) {
+        uri = Uri.parse(streamUrl);
+      } else if (streamUrl.startsWith('file://')) {
+        uri = Uri.parse(streamUrl);
+      } else {
+        // Try to parse as-is
+        uri = Uri.parse(streamUrl);
+      }
+      
+      debugPrint("🎵 Creating audio source for: ${song.title}");
+      debugPrint("📡 Stream URL: $streamUrl");
+      
       // Use LockCachingAudioSource for smart caching
       return LockCachingAudioSource(
-        Uri.parse(streamUrl),
+        uri,
         tag: MediaItem(
           id: song.id,
           album: song.album ?? "Single",
@@ -210,6 +232,10 @@ class VillenAudioHandler {
           },
         ),
       );
+    } catch (e) {
+      debugPrint("❌ Error creating audio source: $e");
+      rethrow;
+    }
   }
 
   Future<void> play() => _player.play();
