@@ -85,22 +85,24 @@ class RateLimitMiddleware:
         return request.META.get('REMOTE_ADDR', '0.0.0.0')
 
 # FIX #5: Protect admin panel from brute force attacks
+# FIX #5: Protect admin panel from brute force attacks
 class AdminRateLimitMiddleware:
     """
-    Aggressive rate limiting for /admin/ endpoint.
+    Aggressive rate limiting for /admin/ login only.
     Prevents brute force attacks on admin password.
-    Max 5 login attempts per 5 minutes per IP.
+    Max 10 login attempts per 5 minutes per IP.
     """
     
     def __init__(self, get_response):
         self.get_response = get_response
         self.admin_attempts = defaultdict(list)  # {ip: [timestamp1, timestamp2, ...]}
-        self.max_attempts = 5
+        self.max_attempts = 10 
         self.window = 300  # 5 minutes
     
     def __call__(self, request):
-        # Only protect /admin/ path
-        if request.path.startswith('/admin/'):
+        # Only protect /admin/login/ POST requests (Brute force protection)
+        # Allow navigation (GET) and other admin pages
+        if request.path == '/admin/login/' and request.method == 'POST':
             ip = self.get_client_ip(request)
             now = time.time()
             
@@ -114,7 +116,7 @@ class AdminRateLimitMiddleware:
             if len(self.admin_attempts[ip]) >= self.max_attempts:
                 return JsonResponse(
                     {
-                        "error": "Too many admin login attempts. "
+                        "error": "Too many failed login attempts. "
                                 "Please try again in 5 minutes."
                     },
                     status=429

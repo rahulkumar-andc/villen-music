@@ -6,6 +6,15 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # Auto-load .env file
+    try:
+        import dotenv
+        # Adjust path to find .env in backend root (one dir up from manage.py location if needed, 
+        # but here manage.py is in backend/, and .env is likely in backend/)
+        dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+    except ImportError:
+        pass
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
     try:
         from django.core.management import execute_from_command_line
