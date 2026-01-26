@@ -119,13 +119,18 @@ CHANNEL_LAYERS = {
 # Database
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "postgres",
+        "USER": "postgres.rhgoydznjdsebvcibnha",
+        "PASSWORD": "Vilen969387",
+        "HOST": "aws-0-ap-south-1.pooler.supabase.com",
+        "PORT": "6543",
+        "OPTIONS": {
+            "sslmode": "require",
+        },
+        "CONN_MAX_AGE": 600,
     }
 }
-# Update database configuration from $DATABASE_URL
-if 'DATABASE_URL' in os.environ:
-    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
 # Caching Strategy
 # Use Redis if REDIS_URL is present, otherwise fallback to Local Memory
