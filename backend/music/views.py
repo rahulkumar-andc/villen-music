@@ -566,25 +566,27 @@ class RecordHistoryView(APIView):
         return Response({"status": "recorded"}, status=201)
 
 class DiscoverWeeklyView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     # Cache for 1 hour to allow history updates to eventually reflect
     @method_decorator(cache_page(60 * 60))
     def get(self, request):
         user = request.user
-        # Smart Recommendation: Content-Based Filtering
-        # 1. Get last played song
-        last_played = PlaybackHistory.objects.filter(user=user).order_by('-listened_at').first()
-        
         recommendations = []
-        if last_played:
-            # 2. Get songs related to last played
-            # Using our service's enhanced get_related (Artist + Era + Language match)
-            start_time = datetime.datetime.now()
-            recommendations = service.get_related(last_played.song_id, limit=20)
-            print(f"DEBUG: Smart Recs took {(datetime.datetime.now() - start_time).total_seconds()}s")
 
-        # 3. Fallback: If no history or no related found, use Trending
+        # Smart Recommendation: Content-Based Filtering (Only for logged-in users)
+        if user.is_authenticated:
+            # 1. Get last played song
+            last_played = PlaybackHistory.objects.filter(user=user).order_by('-listened_at').first()
+            
+            if last_played:
+                # 2. Get songs related to last played
+                # Using our service's enhanced get_related (Artist + Era + Language match)
+                start_time = datetime.datetime.now()
+                recommendations = service.get_related(last_played.song_id, limit=20)
+                print(f"DEBUG: Smart Recs took {(datetime.datetime.now() - start_time).total_seconds()}s")
+
+        # 3. Fallback: If no history or no related found (or guest), use Trending
         if not recommendations:
              recommendations = service.get_trending(language="hindi")
              # Shuffle trending to make it feel like "discovery"
