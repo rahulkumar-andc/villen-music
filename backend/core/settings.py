@@ -122,14 +122,14 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "postgres",
-        "USER": "postgres.rhgoydznjdsebvcibhna",
-        "PASSWORD": "Vilen969387",
-        "HOST": "aws-0-ap-south-1.pooler.supabase.com",
-        "PORT": "6543",
+        "USER": "postgres.ndltymevuioluxctozya",
+        "PASSWORD": "Vilen969396",
+        "HOST": "aws-1-ap-south-1.pooler.supabase.com",
+        "PORT": "5432",
         "OPTIONS": {
             "sslmode": "require",
         },
-        "CONN_MAX_AGE": 600,
+        "CONN_MAX_AGE": 0,  # pooler ke liye safest
     }
 }
 
