@@ -117,11 +117,12 @@ CHANNEL_LAYERS = {
 
 
 # Database
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "postgres",
-        "USER": "postgres.rhgoydznjdsebvcibnha",
+        "USER": "postgres.rhgoydznjdsebvcibhna",
         "PASSWORD": "Vilen969387",
         "HOST": "aws-0-ap-south-1.pooler.supabase.com",
         "PORT": "6543",
@@ -131,6 +132,8 @@ DATABASES = {
         "CONN_MAX_AGE": 600,
     }
 }
+
+
 
 # Caching Strategy
 # Use Redis if REDIS_URL is present, otherwise fallback to Local Memory
