@@ -10,6 +10,9 @@ import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/providers/audio_provider.dart';
 import 'package:villen_music/providers/download_provider.dart';
 import 'package:villen_music/providers/music_provider.dart';
+import 'package:villen_music/models/social_models.dart';
+import 'package:villen_music/services/api_service.dart';
+import 'package:villen_music/screens/artist_selection_screen.dart';
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
@@ -137,6 +140,58 @@ class LibraryScreen extends StatelessWidget {
                 },
               ),
               
+              const SizedBox(height: 24),
+
+              // Your Artists Section
+              _SectionHeader(
+                title: 'Your Artists',
+                onSeeAll: () {}, // Navigate to full artist list if needed
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 140,
+                child: FutureBuilder<List<FollowedArtist>>(
+                  future: context.read<ApiService>().getFollowedArtists(),
+                  builder: (context, snapshot) {
+                     final artists = snapshot.data ?? [];
+                     // We always show "Add Artist" button + any followed artists
+                     final itemCount = 1 + artists.length;
+                     
+                     return ListView.builder(
+                       scrollDirection: Axis.horizontal,
+                       padding: const EdgeInsets.symmetric(horizontal: 16),
+                       itemCount: itemCount,
+                       itemBuilder: (context, index) {
+                         if (index == 0) {
+                           return _AddArtistCircle(onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const ArtistSelectionScreen()),
+                              );
+                              if (result == true) {
+                                // Trigger rebuild if needed, e.g. set state or provider update
+                                // For now, the FutureBuilder won't rebuild automatically unless parent rebuilds
+                                // But user can pull to refresh if implemented, or we can use setState
+                                (context as Element).markNeedsBuild(); 
+                              }
+                           });
+                         }
+                         
+                         final artist = artists[index - 1];
+                         return _ArtistCircle(
+                           name: artist.artistName,
+                           imageUrl: artist.artistImage,
+                           onTap: () {
+                             // Navigate to artist details
+                             // Navigator.pushNamed(context, '/artist', arguments: artist.artistId);
+                           },
+                         );
+                       },
+                     );
+                  },
+                ),
+              ),
+
               const SizedBox(height: 24),
               
               // Playlists Section
@@ -434,6 +489,90 @@ class _RecentSongCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AddArtistCircle extends StatelessWidget {
+  final VoidCallback onTap;
+  
+  const _AddArtistCircle({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+         width: 100,
+         margin: const EdgeInsets.only(right: 16),
+         child: Column(
+           children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey[900],
+                ),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.white, size: 40),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Add artists', 
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+           ],
+         ),
+      ),
+    );
+  }
+}
+
+class _ArtistCircle extends StatelessWidget {
+  final String name;
+  final String? imageUrl;
+  final VoidCallback onTap;
+
+  const _ArtistCircle({required this.name, this.imageUrl, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+         width: 100,
+         margin: const EdgeInsets.only(right: 16),
+         child: Column(
+           children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey[800],
+                  image: imageUrl != null 
+                    ? DecorationImage(
+                        image: CachedNetworkImageProvider(imageUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                ),
+                child: imageUrl == null ? const Icon(Icons.person, size: 40, color: Colors.white54) : null,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                name, 
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+           ],
+         ),
       ),
     );
   }

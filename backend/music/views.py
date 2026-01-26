@@ -568,33 +568,99 @@ class RecordHistoryView(APIView):
 class DiscoverWeeklyView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    # Cache for 1 hour to allow history updates to eventually reflect
+    # Cache for 1 hour
     @method_decorator(cache_page(60 * 60))
     def get(self, request):
         user = request.user
         recommendations = []
-
-        # Smart Recommendation: Content-Based Filtering (Only for logged-in users)
-        if user.is_authenticated:
-            # 1. Get last played song
-            last_played = PlaybackHistory.objects.filter(user=user).order_by('-listened_at').first()
-            
-            if last_played:
-                # 2. Get songs related to last played
-                # Using our service's enhanced get_related (Artist + Era + Language match)
-                start_time = datetime.datetime.now()
-                recommendations = service.get_related(last_played.song_id, limit=20)
-                print(f"DEBUG: Smart Recs took {(datetime.datetime.now() - start_time).total_seconds()}s")
-
-        # 3. Fallback: If no history or no related found (or guest), use Trending
-        if not recommendations:
-             recommendations = service.get_trending(language="hindi")
-             # Shuffle trending to make it feel like "discovery"
-             import random
-             random.shuffle(recommendations)
-             recommendations = recommendations[:20]
         
-        return Response(recommendations)
+        # 1. Gather candidates from Followed Artists (65% Target)
+        followed_songs = []
+        history_songs = []
+        
+        if user.is_authenticated:
+            # A. Followed Artists
+            following = FollowedArtist.objects.filter(user=user)
+            if following.exists():
+                import random
+                # Pick up to 5 random artists to keep it fresh
+                selected_artists = random.sample(list(following), k=min(len(following), 5))
+                for merchant in selected_artists:
+                    artist_details = service.get_artist(merchant.artist_id)
+                    if artist_details and artist_details.get('top_songs'):
+                        followed_songs.extend(artist_details['top_songs'][:5]) # Take top 5 from each
+                
+                random.shuffle(followed_songs)
+
+            # B. History Based (35% Target)
+            last_played = PlaybackHistory.objects.filter(user=user).order_by('-listened_at').first()
+            if last_played:
+                history_songs = service.get_related(last_played.song_id, limit=20)
+
+        # 2. Setup Ratios (Target Total: 20)
+        # 65% of 20 = 13 songs from Followed
+        # 35% of 20 = 7 songs from History/Trending
+        
+        target_total = 20
+        target_followed = 13
+        target_history = 7
+        
+        final_list = []
+        
+        # Add Followed Songs
+        if followed_songs:
+            final_list.extend(followed_songs[:target_followed])
+            
+        # Fill remainder with History or Trending
+        remaining = target_total - len(final_list)
+        
+        if history_songs:
+            final_list.extend(history_songs[:remaining])
+        
+        # If still not full (e.g. no history or not enough followed), fill with Trending
+        if len(final_list) < target_total:
+            trending = service.get_trending(language="hindi")
+            import random
+            random.shuffle(trending)
+            needed = target_total - len(final_list)
+            final_list.extend(trending[:needed])
+            
+        # Final Shuffle for Mix
+        import random
+        random.shuffle(final_list)
+        
+        return Response(final_list)
+
+class SuggestedArtistsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @method_decorator(cache_page(60 * 60 * 24)) # Cache for 24 hours
+    def get(self, request):
+        """Return a curated list of suggested artists for onboarding."""
+        # Since we can't easily query 'all top artists', we perform a search for 'Best Singers'
+        # Or search for a few popular ones and aggregate.
+        
+        # Queries to build a diverse list
+        queries = ["Arijit Singh", "Atif Aslam", "Pritam", "Badshah", "Kishore Kumar", "AR Rahman"]
+        
+        artists = []
+        seen_ids = set()
+        
+        for q in queries:
+            results = service.search_artists(q, limit=1)
+            for artist in results:
+                if artist['id'] not in seen_ids:
+                    artists.append(artist)
+                    seen_ids.add(artist['id'])
+        
+        # Add a generic search result to fill up
+        more = service.search_artists("Singers", limit=10)
+        for artist in more:
+             if artist['id'] not in seen_ids:
+                 artists.append(artist)
+                 seen_ids.add(artist['id'])
+                 
+        return Response(artists)
 
 class ChartsView(APIView):
     permission_classes = [permissions.AllowAny]

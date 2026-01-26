@@ -121,6 +121,34 @@ class JioSaavnService:
         self._set_cache(cache_key, results)
         return results
 
+    def search_artists(self, query: str, limit: int = 10) -> List[Dict]:
+        """Search for artists."""
+        if not query or not query.strip():
+            return []
+            
+        cache_key = f"search_artist:{query.strip().lower()}:{limit}"
+        cached = self._get_cached(cache_key)
+        if cached:
+            return cached
+
+        data = self._api_get("search/artists", {"query": query.strip(), "limit": limit})
+        if not data:
+            return []
+            
+        raw_results = data.get("data", {}).get("results", [])
+        results = []
+        for item in raw_results:
+             results.append({
+                 "id": item.get("id"),
+                 "name": item.get("name"),
+                 "image": self._get_best_image(item.get("image", [])),
+                 "type": "artist",
+                 "role": item.get("role"),
+             })
+
+        self._set_cache(cache_key, results)
+        return results
+
     # --------------------
     # STREAM WITH QUALITY FALLBACK
     # --------------------

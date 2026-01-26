@@ -154,3 +154,21 @@ class Activity {
     );
   }
 }
+
+class Artist {
+  final String id;
+  final String name;
+  final String? image;
+  final String? type;
+  
+  Artist({required this.id, required this.name, this.image, this.type});
+  
+  factory Artist.fromJson(Map<String, dynamic> json) {
+    return Artist(
+      id: json['id'].toString(),
+      name: json['name'],
+      image: json['image'],
+      type: json['type'],
+    );
+  }
+}

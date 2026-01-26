@@ -416,12 +416,7 @@ class ApiService {
       return results.map((json) {
          // Charts come as simplified objects, map to Playlist
          return Playlist(
-            id: json['id'], // ID might be string, Playlist model expects int or string? 
-            // Checking Playlist model: 'final dynamic id' or 'String'.
-            // If backend returns mixed, model handles it hopefully.
-            // Let's assume Playlist.fromJson handles it or use custom mapping if specific Chart fields needed.
-            // The Jiosaavn service returns: {id, title, image, type, song_count, subtitle}
-            // Playlist model: {id, name, description, owner, images, songs...}
+            id: json['id'], 
             name: json['title'],
             description: json['subtitle'] ?? 'Top Chart',
             owner: 'JioSaavn', 
@@ -431,6 +426,17 @@ class ApiService {
          );
       }).toList();
     } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Artist>> getSuggestedArtists() async {
+    try {
+      final response = await _dio.get('${ApiConstants.baseUrl}/discover/artists/suggested/');
+      final List results = response.data;
+      return results.map((json) => Artist.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error fetching suggested artists: $e');
       return [];
     }
   }

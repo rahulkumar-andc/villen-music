@@ -45,6 +45,7 @@ urlpatterns = [
     path("discover/monthly/", views.DiscoverWeeklyView.as_view(), name="discover_monthly"), # Alias
     path("browse/charts/", views.ChartsView.as_view(), name="browse_charts"),
     path("discover/mood/", views.MoodPlaylistView.as_view(), name="mood_playlist"),
+    path("discover/artists/suggested/", views.SuggestedArtistsView.as_view(), name="suggested_artists"),
 
     path("discover/time/", views.TimeAwarePlaylistView.as_view(), name="time_playlist"),
     path("user/insights/", views.UserInsightsView.as_view(), name="user_insights"),
