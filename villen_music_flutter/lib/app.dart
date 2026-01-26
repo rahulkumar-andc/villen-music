@@ -16,6 +16,8 @@ import 'package:villen_music/screens/register_screen.dart';
 import 'package:villen_music/screens/search_screen.dart';
 import 'package:villen_music/screens/splash_screen.dart';
 import 'package:villen_music/screens/equalizer_screen.dart';
+import 'package:villen_music/screens/profile_screen.dart';
+
 
 class VillenApp extends StatelessWidget {
   const VillenApp({super.key});
@@ -40,7 +42,9 @@ class VillenApp extends StatelessWidget {
         '/liked': (context) => const LikedSongsScreen(),
         '/recent': (context) => const RecentlyPlayedScreen(),
         '/equalizer': (context) => const EqualizerScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
+
     );
   }
 }

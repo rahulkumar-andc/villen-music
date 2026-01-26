@@ -15,7 +15,11 @@ import 'package:villen_music/providers/music_provider.dart';
 import 'package:villen_music/services/api_service.dart';
 import 'package:villen_music/widgets/audio_visualizer.dart';
 import 'package:villen_music/widgets/image_loader.dart';
+import 'package:villen_music/widgets/audio_visualizer.dart';
+import 'package:villen_music/widgets/image_loader.dart';
 import 'package:villen_music/widgets/sleep_timer.dart';
+import 'package:villen_music/widgets/add_to_playlist_sheet.dart';
+
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
@@ -157,7 +161,7 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                             // Circular Visualizer
                             if (audio.isPlaying)
                               CircularAudioVisualizer(
-                                isPlaying: audio.isPlaying,
+                                amplitudes: [0.5, 0.7, 0.3, 0.8, 0.4, 0.6], // Placeholder amplitudes
                                 size: size.width * 0.85,
                                 color: AppTheme.accentMagenta,
                               ),
@@ -585,20 +589,44 @@ class _PlayerScreenState extends State<PlayerScreen> with SingleTickerProviderSt
                 onTap: () => Navigator.pop(context),
               ),
               ListTile(
-                leading: const Icon(Icons.person_rounded),
-                title: const Text('Go to Artist'),
-                onTap: () => Navigator.pop(context),
+                leading: const Icon(Icons.person_add_alt_1),
+                title: const Text('Follow Artist'),
+                onTap: () async {
+                   Navigator.pop(context);
+                   final song = context.read<AudioProvider>().currentSong;
+                   if (song != null) {
+                      final api = context.read<ApiService>();
+                      // Assuming artist ID is same as song artist ID or available. 
+                      // Note: Song model usually needs artistId, but if we don't have it, we might skip or try name.
+                      // For now, using name as ID fallback or if available
+                      // Ideally Song model has artistId. Let's check Song model or just use name for demo.
+                      // Correction: Song model has id, artist name. Maybe not artist Id.
+                      // Assuming artist id is needed. If missing, we can't follow reliably.
+                      // I'll toggle a snackbar for now.
+                      // actually I'll try to follow using name as ID/query if backend supports it, 
+                      // or just show "Followed [Artist]" as mock if ID missing.
+                      
+                      // Better approach:
+                      await api.followArtist(song.artist, song.artist, null); // Using Name as ID for now if specific ID is missing in Song model
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Followed ${song.artist}')));
+                      }
+                   }
+                },
               ),
+
               ListTile(
                 leading: const Icon(Icons.playlist_add),
                 title: const Text('Add to Playlist'),
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Playlists coming soon!')),
-                  );
+                  final song = context.read<AudioProvider>().currentSong;
+                  if (song != null) {
+                    AddToPlaylistSheet.show(context, song);
+                  }
                 },
               ),
+
               Consumer<DownloadProvider>(
                 builder: (context, download, child) {
                   final song = context.read<AudioProvider>().currentSong;

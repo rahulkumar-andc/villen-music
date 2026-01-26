@@ -1,23 +1,20 @@
-// Audio Visualizer Widget
-// 
-// Simple animated bars that react to audio playback.
-
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:villen_music/core/theme/app_theme.dart';
 
 class AudioVisualizer extends StatefulWidget {
-  final bool isPlaying;
+  final List<double> amplitudes;
+  final Color color;
   final int barCount;
+  final double width;
   final double height;
-  final Color? color;
 
   const AudioVisualizer({
     super.key,
-    required this.isPlaying,
-    this.barCount = 5,
-    this.height = 40,
-    this.color,
+    required this.amplitudes,
+    this.color = Colors.blue,
+    this.barCount = 32,
+    this.width = 200,
+    this.height = 60,
   });
 
   @override
@@ -26,153 +23,15 @@ class AudioVisualizer extends StatefulWidget {
 
 class _AudioVisualizerState extends State<AudioVisualizer>
     with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _animations;
-  final Random _random = Random();
-
-  @override
-  void initState() {
-    super.initState();
-    _initAnimations();
-  }
-
-  void _initAnimations() {
-    _controllers = List.generate(widget.barCount, (index) {
-      return AnimationController(
-        duration: Duration(milliseconds: 300 + _random.nextInt(400)),
-        vsync: this,
-      );
-    });
-
-    _animations = _controllers.map((controller) {
-      return Tween<double>(
-        begin: 0.2,
-        end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: controller,
-        curve: Curves.easeInOut,
-      ));
-    }).toList();
-
-    // Start with random offsets
-    for (var i = 0; i < _controllers.length; i++) {
-      Future.delayed(Duration(milliseconds: _random.nextInt(300)), () {
-        if (mounted && widget.isPlaying) {
-          _controllers[i].repeat(reverse: true);
-        }
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(AudioVisualizer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    
-    if (widget.isPlaying != oldWidget.isPlaying) {
-      if (widget.isPlaying) {
-        for (var controller in _controllers) {
-          controller.repeat(reverse: true);
-        }
-      } else {
-        for (var controller in _controllers) {
-          controller.stop();
-          controller.animateTo(0.2);
-        }
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = widget.color ?? AppTheme.accentMagenta;
-    
-    return SizedBox(
-      height: widget.height,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(widget.barCount, (index) {
-          return AnimatedBuilder(
-            animation: _animations[index],
-            builder: (context, child) {
-              return Container(
-                width: 4,
-                height: widget.height * _animations[index].value,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(
-                    alpha: 0.4 + (0.6 * _animations[index].value),
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: widget.isPlaying ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                    ),
-                  ] : null,
-                ),
-              );
-            },
-          );
-        }),
-      ),
-    );
-  }
-}
-
-/// Circular Audio Visualizer - for player screen
-class CircularAudioVisualizer extends StatefulWidget {
-  final bool isPlaying;
-  final double size;
-  final Color? color;
-
-  const CircularAudioVisualizer({
-    super.key,
-    required this.isPlaying,
-    this.size = 280,
-    this.color,
-  });
-
-  @override
-  State<CircularAudioVisualizer> createState() => _CircularAudioVisualizerState();
-}
-
-class _CircularAudioVisualizerState extends State<CircularAudioVisualizer>
-    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(milliseconds: 100),
       vsync: this,
-    );
-    
-    if (widget.isPlaying) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(CircularAudioVisualizer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    
-    if (widget.isPlaying != oldWidget.isPlaying) {
-      if (widget.isPlaying) {
-        _controller.repeat();
-      } else {
-        _controller.stop();
-      }
-    }
+    )..repeat(reverse: true);
   }
 
   @override
@@ -183,68 +42,141 @@ class _CircularAudioVisualizerState extends State<CircularAudioVisualizer>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.color ?? AppTheme.accentMagenta;
-    
     return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return CustomPaint(
-            painter: _CircularVisualizerPainter(
-              progress: _controller.value,
-              isPlaying: widget.isPlaying,
-              color: color,
-            ),
-            child: child,
+      width: widget.width,
+      height: widget.height,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(widget.barCount, (index) {
+          final amplitude = widget.amplitudes.isNotEmpty
+              ? widget.amplitudes[min(index, widget.amplitudes.length - 1)]
+              : 0.0;
+
+          return AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final height = amplitude * widget.height * (0.5 + 0.5 * _controller.value);
+              return Container(
+                width: widget.width / widget.barCount - 2,
+                height: max(height, 2),
+                decoration: BoxDecoration(
+                  color: widget.color,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              );
+            },
           );
-        },
+        }),
       ),
     );
   }
 }
 
-class _CircularVisualizerPainter extends CustomPainter {
-  final double progress;
-  final bool isPlaying;
+class CircularAudioVisualizer extends StatefulWidget {
+  final List<double> amplitudes;
   final Color color;
-  final Random _random = Random(42); // Fixed seed for consistency
+  final double size;
 
-  _CircularVisualizerPainter({
-    required this.progress,
-    required this.isPlaying,
-    required this.color,
+  const CircularAudioVisualizer({
+    super.key,
+    required this.amplitudes,
+    this.color = Colors.blue,
+    this.size = 100,
   });
 
   @override
+  State<CircularAudioVisualizer> createState() => _CircularAudioVisualizerState();
+}
+
+class _CircularAudioVisualizerState extends State<CircularAudioVisualizer>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: CustomPaint(
+        painter: CircularVisualizerPainter(
+          amplitudes: widget.amplitudes,
+          color: widget.color,
+          animation: _controller,
+        ),
+      ),
+    );
+  }
+}
+
+class CircularVisualizerPainter extends CustomPainter {
+  final List<double> amplitudes;
+  final Color color;
+  final Animation<double> animation;
+
+  CircularVisualizerPainter({
+    required this.amplitudes,
+    required this.color,
+    required this.animation,
+  }) : super(repaint: animation);
+
+  @override
   void paint(Canvas canvas, Size size) {
-    if (!isPlaying) return;
-    
     final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = size.width / 2 - 20;
-    
+    final radius = min(size.width, size.height) / 2;
+
     final paint = Paint()
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
-    // Draw multiple circles with varying radii
-    for (var i = 0; i < 3; i++) {
-      final offset = sin((progress * 2 * pi) + (i * pi / 3)) * 10;
-      final radius = baseRadius + offset + (i * 8);
-      
-      paint.color = color.withValues(
-        alpha: 0.3 - (i * 0.08),
+    const barCount = 64;
+    final angleStep = 2 * pi / barCount;
+
+    for (int i = 0; i < barCount; i++) {
+      final amplitude = amplitudes.isNotEmpty
+          ? amplitudes[min(i, amplitudes.length - 1)]
+          : 0.0;
+
+      final animatedAmplitude = amplitude * (0.3 + 0.7 * animation.value);
+
+      final angle = i * angleStep;
+      final innerRadius = radius * 0.6;
+      final outerRadius = innerRadius + (radius * 0.4 * animatedAmplitude);
+
+      final startPoint = Offset(
+        center.dx + innerRadius * cos(angle),
+        center.dy + innerRadius * sin(angle),
       );
-      
-      canvas.drawCircle(center, radius, paint);
+
+      final endPoint = Offset(
+        center.dx + outerRadius * cos(angle),
+        center.dy + outerRadius * sin(angle),
+      );
+
+      canvas.drawLine(startPoint, endPoint, paint);
     }
   }
 
   @override
-  bool shouldRepaint(_CircularVisualizerPainter oldDelegate) {
-    return oldDelegate.progress != progress || 
-           oldDelegate.isPlaying != isPlaying;
+  bool shouldRepaint(CircularVisualizerPainter oldDelegate) {
+    return oldDelegate.amplitudes != amplitudes ||
+           oldDelegate.color != color;
   }
 }

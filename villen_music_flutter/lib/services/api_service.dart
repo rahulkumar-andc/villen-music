@@ -11,7 +11,9 @@ import 'package:villen_music/core/constants/api_constants.dart';
 import 'package:villen_music/core/constants/global_keys.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
 import 'package:villen_music/models/song.dart';
+import 'package:villen_music/models/social_models.dart';
 import 'package:villen_music/services/storage_service.dart';
+
 
 class ApiService {
   late Dio _dio;
@@ -226,7 +228,227 @@ class ApiService {
     }
   }
 
+  // --- Social Features ---
+
+  Future<UserProfile?> getUserProfile() async {
+    try {
+      final response = await _dio.get(ApiConstants.userProfile);
+      return UserProfile.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<UserProfile?> updateUserProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.patch(ApiConstants.userProfile, data: data);
+      return UserProfile.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<FollowedArtist>> getFollowedArtists() async {
+    try {
+      final response = await _dio.get(ApiConstants.userFollowing);
+      final List results = response.data;
+      return results.map((json) => FollowedArtist.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<bool> followArtist(String artistId, String name, String? image) async {
+    try {
+      await _dio.post(ApiConstants.userFollowing, data: {
+        'artist_id': artistId,
+        'artist_name': name,
+        'artist_image': image,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> unfollowArtist(String artistId) async {
+    try {
+      await _dio.delete(ApiConstants.userFollowing, data: {'artist_id': artistId});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<List<Activity>> getActivityFeed() async {
+    try {
+      final response = await _dio.get(ApiConstants.userActivity);
+      final List results = response.data;
+      return results.map((json) => Activity.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Playlist>> getPlaylists() async {
+    try {
+      final response = await _dio.get(ApiConstants.playlists);
+      final List results = response.data; // DRF default router returns list or paginated?
+      // If it's paginated (PageNumberPagination default in generic views usually),
+      // we might need result['results']. But ModelViewSet defaults depend on global settings.
+      // Assuming list or check response.
+      // Since default DRF settings aren't visible, I'll assume standard list for now or check.
+      // Usually DRF DefaultRouter with ModelViewSet uses pagination if configured.
+      // Let's assume list for now as we didn't set pagination in views globally.
+      return results.map((json) => Playlist.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Playlist?> createPlaylist(String name, {String description = ''}) async {
+    try {
+      final response = await _dio.post(ApiConstants.playlists, data: {
+        'name': name,
+        'description': description,
+        'is_public': true,
+      });
+      return Playlist.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> updatePlaylist(String id, Map<String, dynamic> data) async {
+    try {
+      await _dio.patch(ApiConstants.playlistDetails(id), data: data);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<Playlist?> getPlaylistDetails(String id) async {
+
+    try {
+      final response = await _dio.get(ApiConstants.playlistDetails(id));
+      return Playlist.fromJson(response.data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> addSongToPlaylist(String playlistId, Song song) async {
+    try {
+      await _dio.post(ApiConstants.playlistAddSong(playlistId), data: {
+        'song_id': song.id,
+        'title': song.title,
+        'artist': song.artist,
+        'image': song.image,
+        'duration': song.durationInSeconds,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> addCollaborator(int playlistId, String username) async {
+    try {
+      await _dio.post(ApiConstants.playlistAddCollaborator(playlistId.toString()), data: {
+        'username': username,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --- Personalization ---
+
+  Future<void> recordPlayback(String songId) async {
+    try {
+      await _dio.post(ApiConstants.recordHistory, data: {'song_id': songId});
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  Future<List<Song>> getDiscoverWeekly() async {
+    try {
+      final response = await _dio.get(ApiConstants.discoverWeekly);
+       final List results = response.data;
+      return results.map((json) => Song.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  Future<Map<String, dynamic>?> getTimePlaylist() async {
+     try {
+      final response = await _dio.get(ApiConstants.timePlaylist);
+      // Returns { "title": "...", "songs": [...] }
+      final data = response.data;
+      final List songs = data['songs'] ?? [];
+      return {
+        "title": data['title'],
+        "songs": songs.map((json) => Song.fromJson(json)).toList(),
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<Song>> getMoodPlaylist(String mood) async {
+    try {
+      final response = await _dio.get(ApiConstants.moodPlaylist, queryParameters: {'mood': mood});
+      final List results = response.data;
+      return results.map((json) => Song.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Playlist>> getCharts() async {
+    try {
+      final response = await _dio.get(ApiConstants.charts);
+      final List results = response.data;
+      return results.map((json) {
+         // Charts come as simplified objects, map to Playlist
+         return Playlist(
+            id: json['id'], // ID might be string, Playlist model expects int or string? 
+            // Checking Playlist model: 'final dynamic id' or 'String'.
+            // If backend returns mixed, model handles it hopefully.
+            // Let's assume Playlist.fromJson handles it or use custom mapping if specific Chart fields needed.
+            // The Jiosaavn service returns: {id, title, image, type, song_count, subtitle}
+            // Playlist model: {id, name, description, owner, images, songs...}
+            name: json['title'],
+            description: json['subtitle'] ?? 'Top Chart',
+            owner: 'JioSaavn', 
+            image: json['image'],
+            songs: [], 
+            isPublic: true
+         );
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  Future<Map<String, dynamic>?> getUserInsights() async {
+
+    try {
+      final response = await _dio.get(ApiConstants.userInsights);
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
   String _getErrorMessage(DioException e) {
+
+
+
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:

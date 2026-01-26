@@ -27,8 +27,10 @@ function createWindow() {
 
   mainWindow.loadFile("index.html");
 
-  // Open DevTools for debugging (remove in production)
-  mainWindow.webContents.openDevTools();
+  // Open DevTools only in development (remove in production)
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
 
   // 2. Window banne ke baad update check karo
   mainWindow.once('ready-to-show', () => {

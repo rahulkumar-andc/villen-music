@@ -26,16 +26,25 @@ class AudioProvider extends ChangeNotifier {
   final _completionController = StreamController<void>.broadcast();
   Stream<void> get onSongFinished => _completionController.stream;
 
+  // Crossfade settings
+  bool crossfadeEnabled = false;
+  double crossfadeDuration = 3.0;
+  
+  // History recording logic
+  String? _recordedSongId;
+  DateTime? _playbackStartTime;
+  Timer? _recordingTimer;
+
+  AudioProvider(this._audioHandler, this._apiService, this._downloadService, this._musicProvider) {
+    _initListeners();
+  }
+
   // Current State
   bool isPlaying = false;
   bool isBuffering = false;
   Duration currentPosition = Duration.zero;
   Duration totalDuration = Duration.zero;
   Song? currentSong;
-  
-  AudioProvider(this._audioHandler, this._apiService, this._downloadService, this._musicProvider) {
-    _initListeners();
-  }
   
   void _initListeners() {
     // 1. Player State (Playing/Paused/Buffering)
@@ -91,8 +100,45 @@ class AudioProvider extends ChangeNotifier {
       duration: item.duration?.inSeconds ?? 0,
       url: item.extras?['url'],
     );
+    
+    // New song started playing
+    if (isPlaying) {
+      _startPlaybackTimer(currentSong!);
+    }
+    
     notifyListeners();
   }
+
+  void _startPlaybackTimer(Song song) {
+    _cancelPlaybackTimer();
+    
+    // Only record if not already recorded this session
+    if (_recordedSongId == song.id) return;
+    
+    debugPrint("⏱️ Starting playback timer for: ${song.title}");
+    _playbackStartTime = DateTime.now();
+    
+    // Rule: Record after 30 seconds of listening
+    _recordingTimer = Timer(const Duration(seconds: 30), () {
+      if (currentSong?.id == song.id && isPlaying) {
+         _recordHistory(song);
+      }
+    });
+  }
+
+  void _cancelPlaybackTimer() {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+  }
+
+  Future<void> _recordHistory(Song song) async {
+    if (_recordedSongId == song.id) return;
+    
+    debugPrint("📝 Recording playback history: ${song.title}");
+    await _apiService.recordPlayback(song.id);
+    _recordedSongId = song.id;
+  }
+
 
   Future<void> _handleSongCompletion() async {
     debugPrint("🎵 Song finished. Checking queue...");
@@ -221,8 +267,12 @@ class AudioProvider extends ChangeNotifier {
       _audioHandler.pause();
     } else {
       _audioHandler.play();
+      if (currentSong != null && _recordedSongId != currentSong!.id) {
+         _startPlaybackTimer(currentSong!);
+      }
     }
   }
+
 
   void seek(Duration position) {
     _audioHandler.seek(position);
@@ -244,6 +294,17 @@ class AudioProvider extends ChangeNotifier {
   
   Future<void> setBandGain(int bandIndex, double gain) async {
     await _audioHandler.setBandGain(bandIndex, gain);
+  }
+
+  // Crossfade methods
+  void setCrossfadeEnabled(bool enabled) {
+    crossfadeEnabled = enabled;
+    notifyListeners();
+  }
+
+  void setCrossfadeDuration(double duration) {
+    crossfadeDuration = duration.clamp(0.5, 10.0);
+    notifyListeners();
   }
 
   @override

@@ -1,6 +1,11 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'playlists', views.PlaylistViewSet, basename='playlist')
+
 
 urlpatterns = [
     # Search
@@ -28,4 +33,21 @@ urlpatterns = [
     path("auth/login/", views.CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/logout/", views.LogoutView.as_view(), name="logout"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),  # FIX #13
-]
+
+    # Social Features
+    path("user/profile/", views.UserProfileView.as_view(), name="user_profile"),
+    path("user/following/", views.FollowArtistView.as_view(), name="user_following"),
+    path("user/activity/", views.ActivityFeedView.as_view(), name="user_activity"),
+    
+    # Personalization
+    path("history/record/", views.RecordHistoryView.as_view(), name="record_history"),
+    path("discover/weekly/", views.DiscoverWeeklyView.as_view(), name="discover_weekly"),
+    path("discover/monthly/", views.DiscoverWeeklyView.as_view(), name="discover_monthly"), # Alias
+    path("browse/charts/", views.ChartsView.as_view(), name="browse_charts"),
+    path("discover/mood/", views.MoodPlaylistView.as_view(), name="mood_playlist"),
+
+    path("discover/time/", views.TimeAwarePlaylistView.as_view(), name="time_playlist"),
+    path("user/insights/", views.UserInsightsView.as_view(), name="user_insights"),
+] + router.urls
+
+

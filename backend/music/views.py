@@ -239,8 +239,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import LikedSong
 from .serializers.auth_serializers import UserRegisterSerializer
+from .serializers.social_serializers import (
+    UserProfileSerializer, FollowedArtistSerializer, 
+    UserProfileSerializer, FollowedArtistSerializer, 
+    PlaylistSerializer, PlaylistSongSerializer, ActivitySerializer
+)
+from .models import LikedSong, UserProfile, FollowedArtist, Playlist, PlaylistSong, Activity, PlaybackHistory
+from rest_framework import viewsets
+
+from rest_framework.decorators import action
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
@@ -369,3 +381,300 @@ class ManageLikesView(APIView):
         
         LikedSong.objects.filter(user=request.user, song_id=song_id).delete()
         return Response({"status": "removed"}, status=200)
+
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        # Ensure profile exists
+        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
+        return profile
+
+
+class FollowArtistView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        following = FollowedArtist.objects.filter(user=request.user).order_by('-created_at')
+        serializer = FollowedArtistSerializer(following, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        artist_id = request.data.get('artist_id')
+        if not artist_id:
+            return Response({"error": "artist_id required"}, status=400)
+        
+        # Check if already following
+        if FollowedArtist.objects.filter(user=request.user, artist_id=artist_id).exists():
+            return Response({"status": "already_following"}, status=200)
+
+        artist_name = request.data.get('artist_name', 'Unknown')
+        artist_image = request.data.get('artist_image', '')
+
+        FollowedArtist.objects.create(
+            user=request.user,
+            artist_id=artist_id,
+            artist_name=artist_name,
+            artist_image=artist_image
+        )
+
+        # Log activity
+        Activity.objects.create(
+            user=request.user,
+            action_type='FOLLOW',
+            target_id=artist_id,
+            description=f"started following {artist_name}"
+        )
+
+        return Response({"status": "followed"}, status=201)
+
+    def delete(self, request):
+        artist_id = request.data.get('artist_id')
+        FollowedArtist.objects.filter(user=request.user, artist_id=artist_id).delete()
+        return Response({"status": "unfollowed"}, status=200)
+
+
+class PlaylistViewSet(viewsets.ModelViewSet):
+    serializer_class = PlaylistSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        # Return public playlists or user's own/collaborated playlists
+        from django.db.models import Q
+        user = self.request.user
+        if user.is_authenticated:
+            return Playlist.objects.filter(
+                Q(is_public=True) | Q(user=user) | Q(collaborators=user)
+            ).distinct().order_by('-created_at')
+        return Playlist.objects.filter(is_public=True).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        playlist = serializer.save(user=self.request.user)
+        Activity.objects.create(
+            user=self.request.user,
+            action_type='PLAYLIST_CREATE',
+            target_id=str(playlist.id),
+            description=f"created playlist {playlist.name}"
+        )
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def add_song(self, request, pk=None):
+        playlist = self.get_object()
+        
+        # Check permissions (owner or collaborator)
+        if playlist.user != request.user and request.user not in playlist.collaborators.all():
+            return Response({"error": "Permission denied"}, status=403)
+
+        song_id = request.data.get('song_id')
+        if not song_id:
+            return Response({"error": "song_id required"}, status=400)
+
+        # Add song
+        song = PlaylistSong.objects.create(
+            playlist=playlist,
+            song_id=song_id,
+            title=request.data.get('title', 'Unknown'),
+            artist=request.data.get('artist', 'Unknown'),
+            image=request.data.get('image', ''),
+            duration=request.data.get('duration', 0),
+            added_by=request.user,
+            order=playlist.songs.count()
+        )
+
+        Activity.objects.create(
+            user=request.user,
+            action_type='PLAYLIST_ADD',
+            target_id=str(playlist.id),
+            description=f"added {song.title} to {playlist.name}"
+        )
+
+        return Response(PlaylistSongSerializer(song).data, status=201)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def add_collaborator(self, request, pk=None):
+        playlist = self.get_object()
+        
+        # Only owner can add collaborators
+        if playlist.user != request.user:
+            return Response({"error": "Only owner can manage collaborators"}, status=403)
+
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "username required"}, status=400)
+
+        try:
+            user_to_add = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        if user_to_add == request.user:
+             return Response({"error": "Cannot add yourself as collaborator"}, status=400)
+
+        playlist.collaborators.add(user_to_add)
+        return Response({"status": "added", "username": username}, status=200)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def remove_collaborator(self, request, pk=None):
+        playlist = self.get_object()
+        
+        # Only owner can remove collaborators
+        if playlist.user != request.user:
+            return Response({"error": "Only owner can manage collaborators"}, status=403)
+
+        username = request.data.get('username')
+        if not username:
+             return Response({"error": "username required"}, status=400)
+
+        try:
+            user_to_remove = User.objects.get(username=username)
+            playlist.collaborators.remove(user_to_remove)
+            return Response({"status": "removed", "username": username}, status=200)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+
+        Activity.objects.create(
+            user=request.user,
+            action_type='PLAYLIST_ADD',
+            target_id=str(playlist.id),
+            description=f"added {song.title} to {playlist.name}"
+        )
+
+        return Response(PlaylistSongSerializer(song).data, status=201)
+
+
+class ActivityFeedView(generics.ListAPIView):
+    serializer_class = ActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Current implementation: Show user's own activity
+        return Activity.objects.filter(user=self.request.user).order_by('-created_at')
+
+
+class RecordHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        song_id = request.data.get('song_id')
+        if not song_id:
+            return Response({"error": "song_id required"}, status=400)
+        
+        PlaybackHistory.objects.create(user=request.user, song_id=song_id)
+        return Response({"status": "recorded"}, status=201)
+
+class DiscoverWeeklyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    # Cache for 1 hour to allow history updates to eventually reflect
+    @method_decorator(cache_page(60 * 60))
+    def get(self, request):
+        user = request.user
+        # Smart Recommendation: Content-Based Filtering
+        # 1. Get last played song
+        last_played = PlaybackHistory.objects.filter(user=user).order_by('-listened_at').first()
+        
+        recommendations = []
+        if last_played:
+            # 2. Get songs related to last played
+            # Using our service's enhanced get_related (Artist + Era + Language match)
+            start_time = datetime.datetime.now()
+            recommendations = service.get_related(last_played.song_id, limit=20)
+            print(f"DEBUG: Smart Recs took {(datetime.datetime.now() - start_time).total_seconds()}s")
+
+        # 3. Fallback: If no history or no related found, use Trending
+        if not recommendations:
+             recommendations = service.get_trending(language="hindi")
+             # Shuffle trending to make it feel like "discovery"
+             import random
+             random.shuffle(recommendations)
+             recommendations = recommendations[:20]
+        
+        return Response(recommendations)
+
+class ChartsView(APIView):
+    permission_classes = [permissions.IsAuthenticated] # Or AllowAny
+
+    @method_decorator(cache_page(60 * 60 * 4)) # Cache for 4 hours
+    def get(self, request):
+        charts = service.get_charts()
+        return Response(charts)
+
+class MoodPlaylistView(APIView):
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        mood = request.query_params.get('mood', 'happy')
+        # Map mood to search query
+        query_map = {
+            'happy': 'party hits',
+            'sad': 'sad songs',
+            'romantic': 'romantic hits',
+            'workout': 'workout motivation',
+        }
+        query = query_map.get(mood, 'top hits')
+        
+        results = service.search(query, limit=20)
+        return Response(results)
+
+class TimeAwarePlaylistView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        import datetime
+        hour = datetime.datetime.now().hour
+        
+        if 5 <= hour < 12:
+            query = "morning motivation"
+            title = "Morning Motivation"
+        elif 12 <= hour < 18:
+            query = "afternoon vibes"
+            title = "Afternoon Vibes"
+        elif 18 <= hour < 22:
+            query = "evening relax"
+            title = "Evening Relax"
+        else:
+            query = "sleep lo-fi"
+            title = "Late Night Lo-Fi"
+            
+        results = service.search(query, limit=20)
+        return Response({
+            "title": title,
+            "songs": results
+        })
+
+class UserInsightsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        qs = PlaybackHistory.objects.filter(user=user)
+        total_listens = qs.count()
+        
+        # Hourly Activity (0-23)
+        # SQLite doesn't support ExtractHour easily in all Django versions without nuances,
+        # so doing simple python aggregation for this demo (performance note: do in DB for prod)
+        hourly_activity = [0] * 24
+        # Optimization: Fetch only timestamps
+        timestamps = qs.values_list('listened_at', flat=True)
+        for ts in timestamps:
+             # handle timezone conversion if needed
+             hour = ts.hour
+             hourly_activity[hour] += 1
+             
+        # Mock Genre Distribution (Since we don't have Genre in SQL yet, usually verified from external API or stored)
+        # Returning placeholder distribution
+        genres = {"Pop": 40, "Indie": 30, "Rock": 20, "Jazz": 10}
+
+        return Response({
+            "total_listens": total_listens,
+            "listening_time": f"{total_listens * 3} mins", 
+            "hourly_activity": hourly_activity,
+            "genre_distribution": genres
+        })
+
+
+

@@ -1,14 +1,12 @@
-<div align="center">
-
-# 🎧 VILLEN Music Player
-### The Ultimate Personal Music Ecosystem
+# 🎧 VILLEN Music Player v2.0
+### The Ultimate Personal Music Ecosystem with Advanced Audio Processing
 
 [![Release](https://img.shields.io/github/v/release/rahulkumar-andc/villen-music?style=for-the-badge&color=magenta)](https://github.com/rahulkumar-andc/villen-music/releases/latest)
 [![License](https://img.shields.io/github/license/rahulkumar-andc/villen-music?style=for-the-badge&color=blue)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Linux-teal?style=for-the-badge)](https://github.com/rahulkumar-andc/villen-music/releases)
-[![Built With](https://img.shields.io/badge/Built%20With-Flutter%20%26%20Django-orange?style=for-the-badge)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Linux%20%7C%20Web-teal?style=for-the-badge)](https://github.com/rahulkumar-andc/villen-music/releases)
+[![Built With](https://img.shields.io/badge/Built%20With-Flutter%20%26%20Django%20%26%20Web%20Audio-orange?style=for-the-badge)](https://flutter.dev)
 
-A premium, cross-platform music experience combining a robust **Django** backend, a high-performance **Flutter** mobile app, and a sleek **Electron** desktop player.
+A premium, cross-platform music experience combining a robust **Django** backend, a high-performance **Flutter** mobile app with advanced audio processing, and a sleek **Electron** desktop player with **PWA** capabilities.
 
 ![VILLEN Music Player](screenshots/main-ui.png)
 
@@ -24,6 +22,7 @@ Choose the version that fits your device. All releases are available on the [**G
 
 | Platform | Type | File Name | Description |
 | :--- | :--- | :--- | :--- |
+| **🌐 Web/PWA** | **Progressive Web App** | [Install from Browser](https://villen-music.com) | Installable web app with offline support |
 | **📱 Android** | **Modern** | `app-arm64-v8a-release.apk` | Best for most modern smartphones (Pixel, Samsung, etc.) |
 | **📱 Android** | **Legacy** | `app-armeabi-v7a-release.apk` | For older or budget devices. |
 | **💻 Windows** | **Portable** | `VillenMusic 1.3.0.exe` | No install needed. Just double-click to run. |
@@ -31,6 +30,24 @@ Choose the version that fits your device. All releases are available on the [**G
 | **🐧 Linux** | **Debian** | `villen-music_1.3.0_amd64.deb` | Native installer for Ubuntu/Debian. |
 
 > **Note for Mac Users:** macOS requires building from source currently. See [Development Guide](#-quick-start-development).
+> **PWA Installation:** Visit the web app in Chrome/Edge and click "Install VILLEN Music" when prompted.
+
+---
+
+## 🚀 Quick Start
+
+### Web/PWA Installation
+1. Open [VILLEN Music Web](https://villen-music.com) in Chrome or Edge
+2. Click the install prompt or browser menu → "Install VILLEN Music"
+3. The app will be added to your home screen/desktop
+4. Enjoy offline playback and push notifications!
+
+### Mobile App Installation
+1. Download the APK from [Releases](https://github.com/rahulkumar-andc/villen-music/releases)
+2. Enable "Install from Unknown Sources" in Android settings
+3. Install the APK and grant audio permissions
+4. Launch and enjoy advanced audio features!
+> **PWA Installation:** Visit the web app in Chrome/Edge and click "Install VILLEN Music" when prompted.
 
 ---
 
@@ -38,24 +55,61 @@ Choose the version that fits your device. All releases are available on the [**G
 
 | Feature | Description |
 | :--- | :--- |
-| **🎨 Premium UI** | Stunning dark purple/magenta glassmorphism design that looks great on any screen. |
-| **☁️ Cross-Platform** | Seamless experience across **Android**, **Windows**, and **Linux**. |
+| **� Advanced Audio Engine** | 10-band equalizer with presets (Rock, Pop, Jazz, Classical, Electronic, Hip Hop, Vocal Boost, Bass/Treble Boost) + smooth crossfade transitions |
+| **🎨 Premium UI** | Stunning dark purple/magenta glassmorphism design with enhanced animations and mobile-optimized experience |
+| **🌐 PWA Support** | Installable web app with offline mode, push notifications, and background sync capabilities |
+| **☁️ Cross-Platform** | Seamless experience across **Android**, **Windows**, **Linux**, and **Web** (PWA) |
 | **🤖 Smart Queue** | Never stop the vibe. The app automatically queues recommendations when your playlist ends. |
 | **🔄 Auto-Updates** | Mobile app checks GitHub for updates and prompts you to install them instantly. |
 | **🌙 Sleep Timer** | Drift off to sleep with your favorite tunes; the app stops playback automatically. |
 | **🎤 Lyrics & Visuals** | Immersive playback with real-time visuals and lyrics support. |
+| **📱 Enhanced Mobile UX** | Larger touch targets, smooth animations, better keyboard handling, and accessibility improvements |
 
----
+## 🎵 Advanced Audio Features
 
-## 🛠️ Technology Stack
+### Equalizer
+VILLEN Music includes a professional 10-band equalizer with the following frequency bands:
+- **32 Hz** - Sub-bass enhancement
+- **64 Hz** - Bass foundation
+- **125 Hz** - Low mids
+- **250 Hz** - Mid-bass
+- **500 Hz** - Lower mids
+- **1 kHz** - Midrange
+- **2 kHz** - Upper mids
+- **4 kHz** - Presence
+- **8 kHz** - Brilliance
+- **16 kHz** - Air/sparkle
+
+### Presets Available
+- **Flat** - No equalization
+- **Rock** - Enhanced bass and treble for rock music
+- **Pop** - Bright and clear sound
+- **Jazz** - Warm, natural sound
+- **Classical** - Balanced acoustic response
+- **Electronic** - Enhanced bass and highs for EDM
+- **Hip Hop** - Powerful bass with crisp highs
+- **Vocal Boost** - Enhanced vocal clarity
+- **Bass Boost** - Maximum low-end enhancement
+- **Treble Boost** - Maximum high-end enhancement
+
+### Crossfade
+Smooth transitions between songs with adjustable duration (0.5-10 seconds) for gapless playback experience.
+
+### PWA Features
+- **Offline Mode** - Listen to cached songs without internet
+- **Push Notifications** - Get notified about new releases and updates
+- **Background Sync** - Sync offline actions when back online
+- **Installable** - Add to home screen for app-like experience
+- **Service Worker** - Handles caching and background tasks
 
 <div align="center">
 
 | Component | Tech | Role |
 | :--- | :--- | :--- |
 | **Backend** | ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) | REST API, Auth, Data Management |
-| **Mobile** | ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white) ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white) | Android & iOS Application |
+| **Mobile** | ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white) ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white) | Android & iOS Application with Advanced Audio Processing |
 | **Desktop** | ![Electron](https://img.shields.io/badge/Electron-47848F?style=flat&logo=electron&logoColor=white) ![JS](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black) | Windows & Linux Desktop Player |
+| **Web/PWA** | ![Web Audio API](https://img.shields.io/badge/Web%20Audio%20API-FF6B35?style=flat&logo=web&logoColor=white) ![Service Worker](https://img.shields.io/badge/Service%20Worker-8A2BE2?style=flat&logo=pwa&logoColor=white) | Progressive Web App with Offline Support |
 
 </div>
 
@@ -103,6 +157,13 @@ All critical security vulnerabilities have been fixed. Latest improvements (FIX 
 - ✅ **FIX #18:** Smart client-side caching (5min TTL, 100 entry limit)
 - ✅ **FIX #19:** Standardized error responses
 
+### Phase 2 Enhancements ✅
+- ✅ **🎵 Advanced Audio Processing:** 10-band equalizer with 10 presets + crossfade
+- ✅ **🌐 PWA Capabilities:** Service worker, offline mode, push notifications, install prompts
+- ✅ **📱 Enhanced Mobile UX:** Better touch targets, smooth animations, accessibility improvements
+- ✅ **🎨 UI/UX Improvements:** Staggered animations, loading states, visual feedback
+- ✅ **🔧 Flutter Compilation:** Fixed all 109 compilation errors, successful APK builds
+
 ### Infrastructure & DevOps ✅
 - ✅ **FIX #23:** PWA manifest for installable web app
 - ✅ **FIX #24:** Analytics service for user engagement tracking
@@ -137,10 +198,18 @@ Django (DRF)
 
 ### Frontend Architecture
 ```
-JavaScript (Vanilla)
+JavaScript (Vanilla) + Web Audio API
 ├── Authentication:
 │   ├── apiFetch wrapper (auto-refresh)
 │   └── HttpOnly cookie handling
+├── Audio Processing:
+│   ├── 10-band Equalizer with presets
+│   ├── Crossfade transitions
+│   └── Real-time audio visualization
+├── PWA Features:
+│   ├── Service Worker (offline support)
+│   ├── Push notifications
+│   └── Background sync
 ├── Caching:
 │   ├── Search results (5min TTL)
 │   ├── Lyrics (5min TTL)
@@ -151,12 +220,17 @@ JavaScript (Vanilla)
 
 ### Mobile Architecture
 ```
-Flutter
+Flutter + Advanced Audio Processing
 ├── State Management: Provider
 ├── API: Dio with interceptors
 ├── Authentication: FlutterSecureStorage
-├── Audio: JustAudio + AudioHandler
+├── Audio Engine:
+│   ├── JustAudio + AudioHandler
+│   ├── 10-band Equalizer
+│   ├── Crossfade support
+│   └── Background playback
 ├── Download: Retry logic + disk space checks
+├── UI/UX: Enhanced animations, accessibility
 └── Connectivity: Real-time connection detection
 ```
 
@@ -355,6 +429,7 @@ VILLEN Music is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 | Version | Date | Highlights |
 |---------|------|-----------|
+| **2.0.0** | 2026-01-26 | 🎵 Advanced audio features (equalizer, crossfade) + PWA capabilities + enhanced mobile UX |
 | **1.4.2** | 2024-01-15 | ✅ All 30 security fixes + optimization complete |
 | **1.4.1** | 2024-01-10 | CRITICAL security patches |
 | **1.4.0** | 2024-01-01 | New features + performance improvements |

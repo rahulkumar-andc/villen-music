@@ -8,6 +8,10 @@
   "orientation": "portrait-primary",
   "background_color": "#0a0a0a",
   "theme_color": "#ff6b35",
+  "categories": ["music", "entertainment", "lifestyle"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/assets/icon-192.png",
@@ -48,6 +52,38 @@
       "form_factor": "wide"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Play Music",
+      "short_name": "Play",
+      "description": "Start playing your music",
+      "url": "/?action=play",
+      "icons": [
+        {
+          "src": "/assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Search Music",
+      "short_name": "Search",
+      "description": "Search for new music",
+      "url": "/?action=search",
+      "icons": [
+        {
+          "src": "/assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "iarc_rating_id": "",
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
   "categories": [
     "music",
     "entertainment"

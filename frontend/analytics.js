@@ -11,11 +11,11 @@
  */
 
 class Analytics {
-  static const string VERSION = '1.0.0';
-  static const MAX_EVENTS = 100;  // Max events to store locally
+  static VERSION = '1.0.0';
+  static MAX_EVENTS = 100;  // Max events to store locally
   
   // Storage key for analytics
-  static const STORAGE_KEY = 'villen_analytics_events';
+  static STORAGE_KEY = 'villen_analytics_events';
   
   /**
    * Track a custom event

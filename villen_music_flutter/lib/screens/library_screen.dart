@@ -26,6 +26,11 @@ class LibraryScreen extends StatelessWidget {
             icon: const Icon(Icons.search),
             onPressed: () => Navigator.pushNamed(context, '/search'),
           ),
+          IconButton(
+            icon: const Icon(Icons.person_rounded),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+          ),
+
         ],
       ),
       body: Consumer<MusicProvider>(

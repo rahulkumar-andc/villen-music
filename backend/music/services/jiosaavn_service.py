@@ -402,6 +402,41 @@ class JioSaavnService:
         return [self._normalize_song(s) for s in songs[:20]]
 
     # --------------------
+    # CHARTS
+    # --------------------
+    def get_charts(self) -> List[Dict]:
+        """Get top charts (playlists)."""
+        cache_key = "charts:top"
+        cached = self._get_cached(cache_key)
+        if cached:
+            return cached
+
+        # Use modules endpoint to find charts
+        data = self._api_get("modules", {"language": "hindi,english"})
+        if data and data.get("success"):
+            modules = data.get("data", {})
+            charts = modules.get("charts", [])
+            
+            # Normalize charts structure
+            result = []
+            for chart in charts:
+                result.append({
+                    "id": chart.get("id"),
+                    "title": chart.get("title"),
+                    "image": chart.get("image"),
+                    "type": "playlist", # Treat as playlist for frontend
+                    "song_count": chart.get("count", 0),
+                    "subtitle": chart.get("subtitle", "Chart"),
+                })
+            
+            if result:
+                self._set_cache(cache_key, result)
+                return result
+        
+        return []
+
+
+    # --------------------
     # NORMALIZATION HELPERS
     # --------------------
     def _normalize_search(self, data: dict) -> List[Dict]:

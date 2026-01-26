@@ -17,6 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script src="audio-enhancer.js"></script>
 </head>
 
 <body>
@@ -26,34 +27,34 @@
     <div id="albumBackground"></div>
 
     <!-- Sidebar -->
-    <nav class="sidebar">
+    <nav class="sidebar" role="navigation" aria-label="Main navigation">
       <div class="logo">
-        <div class="logo-icon">🎧</div>
+        <div class="logo-icon" aria-hidden="true">🎧</div>
         <span>VILLEN</span>
       </div>
 
       <div class="nav-section">
         <div class="nav-label">Library</div>
-        <div class="nav-item active" data-section="home" onclick="showSection('home')">
-          <span class="nav-emoji">🔥</span>
+        <div class="nav-item active" data-section="home" onclick="showSection('home')" role="button" tabindex="0" aria-label="Home section">
+          <span class="nav-emoji" aria-hidden="true">🔥</span>
           <span>Trends</span>
         </div>
-        <div class="nav-item" data-section="artists" onclick="showSection('artists')">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="artists" onclick="showSection('artists')" role="button" tabindex="0" aria-label="Artists section">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
           </svg>
           <span>Artists</span>
         </div>
-        <div class="nav-item" data-section="albums" onclick="showSection('albums')">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="albums" onclick="showSection('albums')" role="button" tabindex="0" aria-label="Albums section">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
           </svg>
           <span>Albums</span>
         </div>
-        <div class="nav-item" data-section="songs" onclick="showSection('search')">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="songs" onclick="showSection('search')" role="button" tabindex="0" aria-label="Songs section">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
           <span>Songs</span>
@@ -62,42 +63,42 @@
 
       <div class="nav-section">
         <div class="nav-label">Discover</div>
-        <div class="nav-item" data-section="recent" onclick="showSection('recent')">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="recent" onclick="showSection('recent')" role="button" tabindex="0" aria-label="Recent songs">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
           </svg>
           <span>Recent</span>
         </div>
-        <div class="nav-item" data-section="offline" onclick="showSection('offline'), loadOfflineSongs()">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="offline" onclick="showSection('offline'), loadOfflineSongs()" role="button" tabindex="0" aria-label="Downloaded songs">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
           </svg>
           <span>Downloads</span>
         </div>
-        <div class="nav-item" data-section="liked" onclick="showSection('liked')">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="liked" onclick="showSection('liked')" role="button" tabindex="0" aria-label="Liked songs">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
           </svg>
           <span>Liked</span>
         </div>
-        <div class="nav-item" data-section="radio" onclick="showSection('home')">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" data-section="radio" onclick="showSection('home')" role="button" tabindex="0" aria-label="Radio">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M3.24 6.15C2.51 6.43 2 7.17 2 8v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2H8.3l8.26-3.34L15.88 1 3.24 6.15zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-8h-2v-2h-2v2H4V8h16v4z" />
           </svg>
           <span>Radio</span>
         </div>
-        <div class="nav-item" onclick="showTimerModal()">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" onclick="showTimerModal()" role="button" tabindex="0" aria-label="Sleep timer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
           </svg>
           <span>Timer</span>
         </div>
-        <div class="nav-item" id="authNavBtn" onclick="toggleAuthModal()">
-          <svg viewBox="0 0 24 24" fill="currentColor">
+        <div class="nav-item" id="authNavBtn" onclick="toggleAuthModal()" role="button" tabindex="0" aria-label="Login">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path
               d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
           </svg>
@@ -198,6 +199,8 @@
           <span class="icon">🎵</span> Currently Playing
         </h3>
         <div class="header-icons">
+          <button class="header-icon-btn" id="themeToggleBtn" data-tooltip="Toggle Dark/Light" onclick="toggleDarkLightMode()">🌙</button>
+          <button class="header-icon-btn" data-tooltip="Visualizer" onclick="showVisualizerModal()">📊</button>
           <button class="header-icon-btn" data-tooltip="Theme" onclick="showThemesModal()">🎨</button>
           <button class="header-icon-btn" data-tooltip="Timer" onclick="showTimerModal()">⏰</button>
           <button class="header-icon-btn" data-tooltip="Shortcuts" onclick="showShortcutsModal()">⌨️</button>
@@ -212,16 +215,19 @@
         </div>
         <!-- Visualizer -->
         <div id="visualizer" class="visualizer-container" style="display: none;">
-          <div class="visualizer-bar" style="height: 10px;"></div>
-          <div class="visualizer-bar" style="height: 20px;"></div>
-          <div class="visualizer-bar" style="height: 15px;"></div>
-          <div class="visualizer-bar" style="height: 25px;"></div>
-          <div class="visualizer-bar" style="height: 18px;"></div>
-          <div class="visualizer-bar" style="height: 30px;"></div>
-          <div class="visualizer-bar" style="height: 22px;"></div>
-          <div class="visualizer-bar" style="height: 16px;"></div>
-          <div class="visualizer-bar" style="height: 28px;"></div>
-          <div class="visualizer-bar" style="height: 12px;"></div>
+          <canvas id="visualizerCanvas" class="visualizer-canvas" style="display: none;"></canvas>
+          <div class="visualizer-bars">
+            <div class="visualizer-bar" style="height: 10px;"></div>
+            <div class="visualizer-bar" style="height: 20px;"></div>
+            <div class="visualizer-bar" style="height: 15px;"></div>
+            <div class="visualizer-bar" style="height: 25px;"></div>
+            <div class="visualizer-bar" style="height: 18px;"></div>
+            <div class="visualizer-bar" style="height: 30px;"></div>
+            <div class="visualizer-bar" style="height: 22px;"></div>
+            <div class="visualizer-bar" style="height: 16px;"></div>
+            <div class="visualizer-bar" style="height: 28px;"></div>
+            <div class="visualizer-bar" style="height: 12px;"></div>
+          </div>
         </div>
       </div>
 
@@ -259,43 +265,43 @@
       <!-- Player Controls -->
       <div class="player-controls">
         <div class="control-buttons">
-          <button id="shuffleBtn" class="control-btn" data-tooltip="Shuffle (S)" onclick="toggleShuffle()">
-            <svg viewBox="0 0 24 24" fill="currentColor">
+          <button id="shuffleBtn" class="control-btn" data-tooltip="Shuffle (S)" onclick="toggleShuffle()" aria-label="Toggle shuffle" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path
                 d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
             </svg>
           </button>
-          <button class="control-btn" data-tooltip="Previous (Shift+←)" onclick="playPrevious()">
-            <svg viewBox="0 0 24 24" fill="currentColor">
+          <button class="control-btn" data-tooltip="Previous (Shift+←)" onclick="playPrevious()" aria-label="Previous song">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
             </svg>
           </button>
           <button id="playPauseBtn" class="control-btn play-pause-btn" data-tooltip="Play/Pause (Space)"
-            onclick="togglePlay()">
-            <svg viewBox="0 0 24 24">
+            onclick="togglePlay()" aria-label="Play or pause">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M8 5v14l11-7z" fill="currentColor" />
             </svg>
           </button>
-          <button class="control-btn" data-tooltip="Next (Shift+→)" onclick="playNext()">
-            <svg viewBox="0 0 24 24" fill="currentColor">
+          <button class="control-btn" data-tooltip="Next (Shift+→)" onclick="playNext()" aria-label="Next song">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
             </svg>
           </button>
-          <button id="repeatBtn" class="control-btn" data-tooltip="Repeat (R)" onclick="toggleRepeat()">
-            <svg viewBox="0 0 24 24" fill="currentColor">
+          <button id="repeatBtn" class="control-btn" data-tooltip="Repeat (R)" onclick="toggleRepeat()" aria-label="Toggle repeat" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
             </svg>
           </button>
         </div>
 
         <div class="progress-container">
-          <span id="currentTime" class="time current">0:00</span>
-          <div id="progressBar" class="progress-bar">
+          <span id="currentTime" class="time current" aria-label="Current time">0:00</span>
+          <div id="progressBar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0" aria-label="Playback progress">
             <div id="progressFill" class="fill" style="width: 0%">
-              <div class="handle"></div>
+              <div class="handle" aria-hidden="true"></div>
             </div>
           </div>
-          <span id="duration" class="time">0:00</span>
+          <span id="duration" class="time" aria-label="Total duration">0:00</span>
         </div>
       </div>
 
@@ -325,6 +331,11 @@
             <div id="volumeFill" class="fill" style="width: 70%"></div>
           </div>
         </div>
+        <button class="extra-btn" data-tooltip="Equalizer (E)" onclick="showEqualizerModal()">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+          </svg>
+        </button>
       </div>
     </footer>
 
@@ -505,12 +516,130 @@
       <h2>🎨 Select Theme</h2>
       <div class="timer-options" style="grid-template-columns: 1fr 1fr;">
         <div class="timer-option" onclick="setTheme('default')" style="border-left: 4px solid #9d4edd">Default</div>
+        <div class="timer-option" onclick="setTheme('theme-light')" style="border-left: 4px solid #8a2be2">Light</div>
         <div class="timer-option" onclick="setTheme('theme-ocean')" style="border-left: 4px solid #00f2ff">Ocean</div>
         <div class="timer-option" onclick="setTheme('theme-crimson')" style="border-left: 4px solid #ff1e1e">Crimson
         </div>
         <div class="timer-option" onclick="setTheme('theme-emerald')" style="border-left: 4px solid #2eff5f">Emerald
         </div>
         <div class="timer-option" onclick="setTheme('theme-gold')" style="border-left: 4px solid #ffd700">Gold</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visualizer Modal -->
+  <div id="visualizerModal" class="timer-modal" onclick="closeVisualizerModal(event)">
+    <div class="timer-content" onclick="event.stopPropagation()">
+      <h2>📊 Visualizer Settings</h2>
+      <div class="timer-options" style="grid-template-columns: 1fr;">
+        <div class="timer-option" onclick="setVisualizerMode('bars')" style="border-left: 4px solid #00f2ff">Spectrum Bars</div>
+        <div class="timer-option" onclick="setVisualizerMode('waveform')" style="border-left: 4px solid #ff2d75">Waveform</div>
+        <div class="timer-option" onclick="setVisualizerMode('circular')" style="border-left: 4px solid #2eff5f">Circular Spectrum</div>
+        <div class="timer-option" onclick="setVisualizerMode('album')" style="border-left: 4px solid #ffd700">Album Art Overlay</div>
+        <div class="timer-option" onclick="toggleVisualizer()" style="border-left: 4px solid #8a2be2">Toggle Visualizer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equalizer Modal -->
+  <div id="equalizerModal" class="equalizer-modal" onclick="closeEqualizerModal(event)">
+    <div class="equalizer-content" onclick="event.stopPropagation()">
+      <div class="equalizer-header">
+        <h2>🎵 Equalizer</h2>
+        <div class="equalizer-controls">
+          <button class="equalizer-btn" onclick="toggleEqualizer()" id="equalizerToggle">Enable EQ</button>
+          <button class="equalizer-btn" onclick="resetEqualizer()">Reset</button>
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="equalizer-section">
+        <h3>Presets</h3>
+        <div class="equalizer-presets">
+          <button class="preset-btn active" data-preset="flat" onclick="applyEqualizerPreset('flat')">Flat</button>
+          <button class="preset-btn" data-preset="rock" onclick="applyEqualizerPreset('rock')">Rock</button>
+          <button class="preset-btn" data-preset="pop" onclick="applyEqualizerPreset('pop')">Pop</button>
+          <button class="preset-btn" data-preset="jazz" onclick="applyEqualizerPreset('jazz')">Jazz</button>
+          <button class="preset-btn" data-preset="classical" onclick="applyEqualizerPreset('classical')">Classical</button>
+          <button class="preset-btn" data-preset="electronic" onclick="applyEqualizerPreset('electronic')">Electronic</button>
+          <button class="preset-btn" data-preset="hiphop" onclick="applyEqualizerPreset('hiphop')">Hip Hop</button>
+          <button class="preset-btn" data-preset="vocal" onclick="applyEqualizerPreset('vocal')">Vocal Boost</button>
+          <button class="preset-btn" data-preset="bass" onclick="applyEqualizerPreset('bass')">Bass Boost</button>
+          <button class="preset-btn" data-preset="treble" onclick="applyEqualizerPreset('treble')">Treble Boost</button>
+        </div>
+      </div>
+
+      <!-- Manual Controls -->
+      <div class="equalizer-section">
+        <h3>Manual Adjustment</h3>
+        <div class="equalizer-sliders">
+          <div class="eq-slider">
+            <label>32 Hz</label>
+            <input type="range" class="eq-range" data-freq="32" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(32, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>64 Hz</label>
+            <input type="range" class="eq-range" data-freq="64" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(64, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>125 Hz</label>
+            <input type="range" class="eq-range" data-freq="125" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(125, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>250 Hz</label>
+            <input type="range" class="eq-range" data-freq="250" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(250, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>500 Hz</label>
+            <input type="range" class="eq-range" data-freq="500" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(500, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>1 kHz</label>
+            <input type="range" class="eq-range" data-freq="1000" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(1000, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>2 kHz</label>
+            <input type="range" class="eq-range" data-freq="2000" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(2000, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>4 kHz</label>
+            <input type="range" class="eq-range" data-freq="4000" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(4000, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>8 kHz</label>
+            <input type="range" class="eq-range" data-freq="8000" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(8000, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+          <div class="eq-slider">
+            <label>16 kHz</label>
+            <input type="range" class="eq-range" data-freq="16000" min="-20" max="20" value="0" step="0.5" oninput="updateEqualizerBand(16000, this.value)">
+            <span class="eq-value">0 dB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Crossfade Settings -->
+      <div class="equalizer-section">
+        <h3>Crossfade</h3>
+        <div class="crossfade-controls">
+          <label class="toggle-label">
+            <input type="checkbox" id="crossfadeToggle" onchange="toggleCrossfade(this.checked)">
+            <span class="toggle-slider"></span>
+            Enable Crossfade
+          </label>
+          <div class="crossfade-duration">
+            <label>Duration: <span id="crossfadeValue">3</span>s</label>
+            <input type="range" id="crossfadeSlider" min="0.5" max="10" value="3" step="0.5" oninput="setCrossfadeDuration(this.value)">
+          </div>
+        </div>
       </div>
     </div>
   </div>

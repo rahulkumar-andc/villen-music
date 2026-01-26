@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     'music',
     'rest_framework',
     'rest_framework_simplejwt',
+    'channels',
 ]
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Must be first
@@ -104,6 +106,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
 
 
 # Database
@@ -114,6 +124,30 @@ DATABASES = {
     }
 }
 # Update database configuration from $DATABASE_URL
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+
+# Caching Strategy
+# Use Redis if REDIS_URL is present, otherwise fallback to Local Memory
+if 'REDIS_URL' in os.environ:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": os.environ.get('REDIS_URL'),
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "IGNORE_EXCEPTIONS": True,
+            }
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        }
+    }
+
 
 
 # Password validation

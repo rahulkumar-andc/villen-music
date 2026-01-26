@@ -22,13 +22,10 @@ const state = {
 
     // Auth State
     user: JSON.parse(localStorage.getItem('user') || 'null'),
-    // Auth State
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token') || null,
 
     // Offline State
     offlineSongs: [],
-
 
     trendingIndex: 0,
     trending: [],
@@ -92,7 +89,7 @@ audio.addEventListener('play', () => {
     state.isPlaying = true;
     updatePlayButton();
     updateMediaSession();
-    startVisualizer();
+    if (visualizerEnabled) startVisualizer();
 });
 audio.addEventListener('pause', () => {
     state.isPlaying = false;
@@ -573,41 +570,204 @@ function updateAlbumBackground(song) {
 }
 
 // ==================== VISUALIZER ====================
+let visualizerMode = localStorage.getItem('visualizerMode') || 'bars';
+let visualizerEnabled = localStorage.getItem('visualizerEnabled') === 'true';
+
 function initVisualizer() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioContext.createMediaElementSource(audio);
         analyser = audioContext.createAnalyser();
-        analyser.fftSize = 64;
+        analyser.fftSize = 256;
         source.connect(analyser);
         analyser.connect(audioContext.destination);
     }
 }
 
+function showVisualizerModal() {
+    document.getElementById('visualizerModal').classList.add('show');
+}
+
+function closeVisualizerModal(event) {
+    if (event.target === document.getElementById('visualizerModal')) {
+        document.getElementById('visualizerModal').classList.remove('show');
+    }
+}
+
+function setVisualizerMode(mode) {
+    visualizerMode = mode;
+    localStorage.setItem('visualizerMode', mode);
+    showToast(`Visualizer: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+    document.getElementById('visualizerModal').classList.remove('show');
+    if (visualizerEnabled && state.isPlaying) {
+        startVisualizer();
+    }
+}
+
+function toggleVisualizer() {
+    visualizerEnabled = !visualizerEnabled;
+    localStorage.setItem('visualizerEnabled', visualizerEnabled);
+    showToast(visualizerEnabled ? 'Visualizer enabled' : 'Visualizer disabled');
+    document.getElementById('visualizerModal').classList.remove('show');
+
+    if (visualizerEnabled && state.isPlaying) {
+        startVisualizer();
+    } else {
+        stopVisualizer();
+    }
+}
+
 function startVisualizer() {
+    if (!visualizerEnabled) return;
+
     const visualizer = document.getElementById('visualizer');
+    const canvas = document.getElementById('visualizerCanvas');
+    const barsContainer = document.querySelector('.visualizer-bars');
+
     if (!visualizer) return;
 
     try {
         initVisualizer();
         visualizer.style.display = 'flex';
 
-        const bars = visualizer.querySelectorAll('.visualizer-bar');
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
+        if (visualizerMode === 'bars') {
+            canvas.style.display = 'none';
+            barsContainer.style.display = 'flex';
 
-        function animate() {
-            visualizerAnimationId = requestAnimationFrame(animate);
-            analyser.getByteFrequencyData(dataArray);
+            const bars = visualizer.querySelectorAll('.visualizer-bar');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
 
-            bars.forEach((bar, i) => {
-                const value = dataArray[i * 2] || 0;
-                const height = Math.max(4, (value / 255) * 40);
-                bar.style.height = `${height}px`;
-            });
+            function animateBars() {
+                visualizerAnimationId = requestAnimationFrame(animateBars);
+                analyser.getByteFrequencyData(dataArray);
+
+                bars.forEach((bar, i) => {
+                    const value = dataArray[i * 4] || 0;
+                    const height = Math.max(4, (value / 255) * 40);
+                    bar.style.height = `${height}px`;
+                });
+            }
+            animateBars();
+
+        } else if (visualizerMode === 'waveform') {
+            barsContainer.style.display = 'none';
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function animateWaveform() {
+                visualizerAnimationId = requestAnimationFrame(animateWaveform);
+                analyser.getByteTimeDomainData(dataArray);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Get accent color from CSS variable
+                const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = accentColor || '#ff2d75';
+                ctx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    x += sliceWidth;
+                }
+                ctx.stroke();
+            }
+            animateWaveform();
+
+        } else if (visualizerMode === 'circular') {
+            barsContainer.style.display = 'none';
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 10;
+
+            function animateCircular() {
+                visualizerAnimationId = requestAnimationFrame(animateCircular);
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const value = dataArray[i];
+                    const angle = (i / bufferLength) * Math.PI * 2;
+                    const barHeight = (value / 255) * 50;
+
+                    const x1 = centerX + Math.cos(angle) * radius;
+                    const y1 = centerY + Math.sin(angle) * radius;
+                    const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+                    const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+
+                    ctx.strokeStyle = `hsl(${(i / bufferLength) * 360}, 70%, 50%)`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            }
+            animateCircular();
+
+        } else if (visualizerMode === 'album') {
+            barsContainer.style.display = 'none';
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = state.currentSong?.image || '';
+
+            img.onload = () => {
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                function animateAlbum() {
+                    visualizerAnimationId = requestAnimationFrame(animateAlbum);
+                    analyser.getByteFrequencyData(dataArray);
+
+                    // Draw album art with blur effect based on audio
+                    const blurAmount = (dataArray[0] / 255) * 10;
+                    ctx.filter = `blur(${blurAmount}px)`;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Overlay frequency bars
+                    ctx.filter = 'none';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    for (let i = 0; i < 20; i++) {
+                        const value = dataArray[i * 5] || 0;
+                        const height = (value / 255) * canvas.height * 0.3;
+                        ctx.fillRect(i * (canvas.width / 20), canvas.height - height, canvas.width / 20 - 2, height);
+                    }
+                }
+                animateAlbum();
+            };
         }
 
-        animate();
     } catch (e) {
         console.log('Visualizer not supported');
     }
@@ -623,6 +783,12 @@ function stopVisualizer() {
     if (visualizer) {
         const bars = visualizer.querySelectorAll('.visualizer-bar');
         bars.forEach(bar => bar.style.height = '4px');
+
+        const canvas = document.getElementById('visualizerCanvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
     }
 }
 
@@ -872,7 +1038,7 @@ function updateNextSongsList() {
         return;
     }
 
-    container.innerHTML = nextSongs.map((song, i) => `
+    const html = nextSongs.map((song, i) => `
         <div class="next-song-item" onclick="playFromQueue(${state.queueIndex + 1 + i})" oncontextmenu="showContextMenu(event, ${JSON.stringify(song).replace(/"/g, '&quot;')})">
             <img class="next-song-thumb" src="${song.image || ''}" alt="" loading="lazy" onerror="this.style.background='var(--bg-tertiary)'">
             <div class="next-song-info">
@@ -883,25 +1049,29 @@ function updateNextSongsList() {
         </div>
     `).join('');
 
-    // Efficient DOM update
     container.innerHTML = html;
 }
 
 function updatePlayButton() {
     const btn = document.getElementById('playPauseBtn');
     if (btn) {
-        btn.innerHTML = state.isPlaying ? svgIcons.pause : svgIcons.play;
+        const isPlaying = state.isPlaying;
+        btn.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+        btn.innerHTML = isPlaying ? svgIcons.pause : svgIcons.play;
+        announceToScreenReader(isPlaying ? 'Playback started' : 'Playback paused');
     }
 }
 
 function updateProgress() {
     const fill = document.getElementById('progressFill');
     const currentTime = document.getElementById('currentTime');
+    const progressBar = document.getElementById('progressBar');
 
     if (audio.duration) {
         const percent = (audio.currentTime / audio.duration) * 100;
         fill.style.width = `${percent}%`;
         currentTime.textContent = formatTime(audio.currentTime);
+        progressBar.setAttribute('aria-valuenow', Math.round(percent));
     }
 }
 
@@ -1276,18 +1446,23 @@ document.addEventListener('keydown', (e) => {
 function initProgressBar() {
     const bar = document.getElementById('progressBar');
     let isDragging = false;
+    
+    // Use named functions to allow removal
+    const handleMouseMove = (e) => {
+        if (isDragging) updateSeek(e);
+    };
+    
+    const handleMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    };
 
     bar.addEventListener('mousedown', (e) => {
         isDragging = true;
         updateSeek(e);
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging) updateSeek(e);
-    });
-
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     });
 
     function updateSeek(e) {
@@ -1300,18 +1475,23 @@ function initProgressBar() {
 function initVolumeSlider() {
     const slider = document.getElementById('volumeSlider');
     let isDragging = false;
+    
+    // Use named functions to allow removal
+    const handleMouseMove = (e) => {
+        if (isDragging) updateVolume(e);
+    };
+    
+    const handleMouseUp = () => {
+        isDragging = false;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    };
 
     slider.addEventListener('mousedown', (e) => {
         isDragging = true;
         updateVolume(e);
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging) updateVolume(e);
-    });
-
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     });
 
     function updateVolume(e) {
@@ -1868,20 +2048,10 @@ toggleLike = async function (song) {
 }
 
 // ==================== THEMES ====================
-function showThemesModal() {
-    document.getElementById('themesModal').classList.add('show');
-}
-
-function closeThemesModal(event) {
-    if (event.target === document.getElementById('themesModal')) {
-        document.getElementById('themesModal').classList.remove('show');
-    }
-}
-
 function setTheme(themeName) {
     const body = document.body;
     // Remove all theme classes
-    body.classList.remove('theme-ocean', 'theme-crimson', 'theme-emerald', 'theme-gold');
+    body.classList.remove('theme-ocean', 'theme-crimson', 'theme-emerald', 'theme-gold', 'theme-light');
 
     // Add new theme class if not default
     if (themeName !== 'default') {
@@ -1892,12 +2062,47 @@ function setTheme(themeName) {
     localStorage.setItem('theme', themeName);
     showToast(`Theme set to ${themeName.replace('theme-', '').toUpperCase() || 'Default'}`);
 
+    // Update toggle button icon
+    updateThemeToggleIcon();
+
     document.getElementById('themesModal').classList.remove('show');
 }
 
+function toggleDarkLightMode() {
+    const currentTheme = localStorage.getItem('theme') || 'default';
+    const isLight = currentTheme === 'theme-light';
+    const newTheme = isLight ? 'default' : 'theme-light';
+    setTheme(newTheme);
+    showToast(`Switched to ${isLight ? 'Dark' : 'Light'} mode`);
+}
+
+function updateThemeToggleIcon() {
+    const btn = document.getElementById('themeToggleBtn');
+    const currentTheme = localStorage.getItem('theme') || 'default';
+    const isLight = currentTheme === 'theme-light';
+    btn.innerHTML = isLight ? '☀️' : '🌙';
+    btn.setAttribute('data-tooltip', `Switch to ${isLight ? 'Dark' : 'Light'} mode`);
+}
+
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'default';
-    setTheme(savedTheme);
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        // Detect system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark ? 'default' : 'theme-light');
+    }
+
+    // Update toggle button
+    updateThemeToggleIcon();
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'default' : 'theme-light');
+        }
+    });
 }
 
 // ==================== OFFLINE MODE ====================
@@ -1982,5 +2187,753 @@ function renderOfflineSongs() {
     `;
 }
 
+// ==================== ACCESSIBILITY IMPROVEMENTS ====================
+// Keyboard navigation for sidebar
+document.addEventListener('keydown', (e) => {
+    if (e.target.closest('.sidebar')) {
+        const navItems = Array.from(document.querySelectorAll('.nav-item[role="button"]'));
+        const currentIndex = navItems.findIndex(item => item === document.activeElement);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = (currentIndex + 1) % navItems.length;
+            navItems[nextIndex].focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = currentIndex <= 0 ? navItems.length - 1 : currentIndex - 1;
+            navItems[prevIndex].focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            document.activeElement.click();
+        }
+    }
+});
+
+// Focus trap for modals
+function trapFocus(element) {
+    const focusableElements = element.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    function handleTab(e) {
+        if (e.key !== 'Tab') return;
+
+        if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+                lastElement.focus();
+                e.preventDefault();
+            }
+        } else {
+            if (document.activeElement === lastElement) {
+                firstElement.focus();
+                e.preventDefault();
+            }
+        }
+    }
+
+    element.addEventListener('keydown', handleTab);
+    firstElement.focus();
+
+    return () => element.removeEventListener('keydown', handleTab);
+}
+
+// Apply focus trap to modals
+let removeFocusTrap = null;
+
+function showThemesModal() {
+    document.getElementById('themesModal').classList.add('show');
+    removeFocusTrap = trapFocus(document.getElementById('themesModal'));
+}
+
+function closeThemesModal(event) {
+    if (event.target === document.getElementById('themesModal')) {
+        document.getElementById('themesModal').classList.remove('show');
+        if (removeFocusTrap) removeFocusTrap();
+    }
+}
+
+function showVisualizerModal() {
+    document.getElementById('visualizerModal').classList.add('show');
+    removeFocusTrap = trapFocus(document.getElementById('visualizerModal'));
+}
+
+function closeVisualizerModal(event) {
+    if (event.target === document.getElementById('visualizerModal')) {
+        document.getElementById('visualizerModal').classList.remove('show');
+        if (removeFocusTrap) removeFocusTrap();
+    }
+}
+
+// Screen reader announcements
+function announceToScreenReader(message) {
+    const announcement = document.createElement('div');
+    announcement.setAttribute('aria-live', 'polite');
+    announcement.setAttribute('aria-atomic', 'true');
+    announcement.style.position = 'absolute';
+    announcement.style.left = '-10000px';
+    announcement.style.width = '1px';
+    announcement.style.height = '1px';
+    announcement.style.overflow = 'hidden';
+    announcement.textContent = message;
+    document.body.appendChild(announcement);
+    setTimeout(() => document.body.removeChild(announcement), 1000);
+}
+
+// Update play button with ARIA
+// Update progress bar with ARIA handled in main updateProgress()
+
 // Init Offline
 loadOfflineSongs();
+
+// ==================== AUDIO ENHANCER ====================
+
+// Audio context and enhancer
+let audioContext = null;
+let audioEnhancer = null;
+let audioVisualizer = null;
+
+// Initialize audio context and enhancer
+function initializeAudioEnhancer() {
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (error) {
+            console.error('AudioContext not supported:', error);
+            return false;
+        }
+    }
+
+    // Resume audio context if suspended (required by some browsers)
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    // Initialize enhancer if not already done
+    if (!audioEnhancer && audioElement) {
+        try {
+            const source = audioContext.createMediaElementSource(audioElement);
+            audioEnhancer = new AudioEnhancer(audioContext, source);
+
+            // Initialize visualizer
+            const canvas = document.getElementById('visualizerCanvas');
+            if (canvas) {
+                audioVisualizer = new AudioVisualizer(audioContext, source, canvas);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize audio enhancer:', error);
+            return false;
+        }
+    }
+
+    return audioEnhancer !== null;
+}
+
+// Equalizer Modal Functions
+function showEqualizerModal() {
+    // Initialize audio enhancer if not already done
+    if (!initializeAudioEnhancer()) {
+        showToast('Audio enhancer not supported in this browser', 'error');
+        return;
+    }
+
+    const modal = document.getElementById('equalizerModal');
+    modal.classList.add('show');
+
+    // Update UI to reflect current state
+    updateEqualizerUI();
+
+    // Add keyboard shortcut
+    document.addEventListener('keydown', handleEqualizerKeydown);
+}
+
+function closeEqualizerModal(event) {
+    if (event.target === document.getElementById('equalizerModal')) {
+        hideEqualizerModal();
+    }
+}
+
+function hideEqualizerModal() {
+    const modal = document.getElementById('equalizerModal');
+    modal.classList.remove('show');
+    document.removeEventListener('keydown', handleEqualizerKeydown);
+}
+
+function handleEqualizerKeydown(event) {
+    if (event.key === 'Escape') {
+        hideEqualizerModal();
+    }
+}
+
+// Update equalizer UI to reflect current state
+function updateEqualizerUI() {
+    if (!audioEnhancer) return;
+
+    // Update toggle button
+    const toggleBtn = document.getElementById('equalizerToggle');
+    toggleBtn.textContent = audioEnhancer.isEnabled ? 'Disable EQ' : 'Enable EQ';
+    toggleBtn.style.background = audioEnhancer.isEnabled ?
+        'linear-gradient(135deg, #ff4757, #ff3838)' :
+        'linear-gradient(135deg, #ff6b35, #ff8f65)';
+
+    // Update preset buttons
+    const currentPreset = audioEnhancer.getCurrentPreset();
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === currentPreset);
+    });
+
+    // Update slider values
+    audioEnhancer.eqBands.forEach(freq => {
+        const slider = document.querySelector(`.eq-range[data-freq="${freq}"]`);
+        const valueSpan = slider?.nextElementSibling;
+        if (slider && valueSpan) {
+            const value = audioEnhancer.getEqBand(freq);
+            slider.value = value;
+            valueSpan.textContent = `${value} dB`;
+        }
+    });
+
+    // Update crossfade settings
+    const crossfadeToggle = document.getElementById('crossfadeToggle');
+    const crossfadeSlider = document.getElementById('crossfadeSlider');
+    const crossfadeValue = document.getElementById('crossfadeValue');
+
+    if (crossfadeToggle && crossfadeSlider && crossfadeValue) {
+        crossfadeToggle.checked = audioEnhancer.crossfadeEnabled;
+        crossfadeSlider.value = audioEnhancer.getCrossfadeDuration();
+        crossfadeValue.textContent = audioEnhancer.getCrossfadeDuration();
+    }
+}
+
+// Equalizer Control Functions
+function toggleEqualizer() {
+    if (!audioEnhancer) return;
+
+    audioEnhancer.enable(!audioEnhancer.isEnabled);
+    updateEqualizerUI();
+
+    showToast(
+        audioEnhancer.isEnabled ? 'Equalizer enabled' : 'Equalizer disabled',
+        'success'
+    );
+}
+
+function applyEqualizerPreset(presetName) {
+    if (!audioEnhancer) return;
+
+    const preset = audioEnhancer.applyPreset(presetName);
+    if (preset) {
+        updateEqualizerUI();
+        showToast(`Applied ${preset.name} preset`, 'success');
+    }
+}
+
+function updateEqualizerBand(frequency, value) {
+    if (!audioEnhancer) return;
+
+    audioEnhancer.setEqBand(frequency, parseFloat(value));
+
+    // Update value display
+    const slider = document.querySelector(`.eq-range[data-freq="${frequency}"]`);
+    const valueSpan = slider?.nextElementSibling;
+    if (valueSpan) {
+        valueSpan.textContent = `${value} dB`;
+    }
+
+    // Switch to manual preset if not already
+    if (audioEnhancer.getCurrentPreset() !== 'flat') {
+        // Reset preset indicators if user manually adjusts
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+    }
+}
+
+function resetEqualizer() {
+    if (!audioEnhancer) return;
+
+    audioEnhancer.resetEqualizer();
+    updateEqualizerUI();
+    showToast('Equalizer reset to flat', 'success');
+}
+
+// Crossfade Functions
+function toggleCrossfade(enabled) {
+    if (!audioEnhancer) return;
+
+    audioEnhancer.enableCrossfade(enabled);
+    showToast(
+        enabled ? 'Crossfade enabled' : 'Crossfade disabled',
+        'success'
+    );
+}
+
+function setCrossfadeDuration(value) {
+    if (!audioEnhancer) return;
+
+    audioEnhancer.setCrossfadeDuration(parseFloat(value));
+    document.getElementById('crossfadeValue').textContent = value;
+}
+
+// Enhanced playNext with crossfade support
+function playNextWithCrossfade() {
+    if (!audioEnhancer || !audioEnhancer.crossfadeEnabled) {
+        playNext();
+        return;
+    }
+
+    // Get next song
+    const nextIndex = getNextSongIndex();
+    if (nextIndex === -1) return;
+
+    const nextSong = state.queue[nextIndex];
+
+    // Start crossfade
+    const currentSource = audioContext.createMediaElementSource(audioElement);
+    const nextAudio = new Audio(nextSong.url);
+
+    nextAudio.addEventListener('canplaythrough', () => {
+        const nextSource = audioContext.createMediaElementSource(nextAudio);
+
+        audioEnhancer.crossfadeToNext(currentSource, nextSource, () => {
+            // Crossfade complete, switch to next song normally
+            audioElement = nextAudio;
+            state.currentSong = nextSong;
+            state.queueIndex = nextIndex;
+            updateUI();
+            updateQueueHighlight();
+        });
+    });
+
+    nextAudio.load();
+}
+
+// Override playNext to use crossfade when enabled
+const originalPlayNext = playNext;
+playNext = function() {
+    if (audioEnhancer && audioEnhancer.crossfadeEnabled) {
+        playNextWithCrossfade();
+    } else {
+        originalPlayNext();
+    }
+};
+
+// Visualizer Functions (enhanced)
+function toggleVisualizer() {
+    if (!audioVisualizer) {
+        showToast('Visualizer not available', 'error');
+        return;
+    }
+
+    if (audioVisualizer.isEnabled) {
+        audioVisualizer.stop();
+        document.getElementById('visualizer').style.display = 'none';
+        showToast('Visualizer disabled', 'info');
+    } else {
+        audioVisualizer.start();
+        document.getElementById('visualizer').style.display = 'block';
+        showToast('Visualizer enabled', 'success');
+    }
+}
+
+function setVisualizerMode(mode) {
+    if (!audioVisualizer) return;
+
+    // This would switch between different visualizer modes
+    // For now, just show a toast
+    showToast(`Visualizer mode: ${mode}`, 'info');
+}
+
+// Initialize audio enhancer when audio element is created
+function initializeAudioOnPlay() {
+    if (!audioContext && audioElement) {
+        initializeAudioEnhancer();
+    }
+}
+
+// Add event listener for when audio starts playing
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize audio enhancer when first audio element is created
+    const observer = new MutationObserver(() => {
+        if (audioElement && !audioContext) {
+            initializeAudioEnhancer();
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+});
+
+// ==================== PWA FUNCTIONALITY ====================
+
+// PWA Install Prompt
+let deferredPrompt;
+let installButton = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+
+    // Show install button if not already installed
+    showInstallButton();
+});
+
+window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA was installed successfully');
+    hideInstallButton();
+    // Track installation
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'pwa_install', {
+            event_category: 'engagement',
+            event_label: 'PWA Install'
+        });
+    }
+});
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+                console.log('Service Worker registered successfully:', registration.scope);
+
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available
+                            showUpdateNotification();
+                        }
+                    });
+                });
+
+                // Handle messages from service worker
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+                        showUpdateNotification();
+                    }
+                });
+
+            })
+            .catch((error) => {
+                console.log('Service Worker registration failed:', error);
+            });
+    });
+}
+
+// Push Notifications
+async function requestNotificationPermission() {
+    if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('Notification permission granted');
+            // Register for push notifications
+            registerPushNotifications();
+        } else {
+            console.log('Notification permission denied');
+        }
+    }
+}
+
+async function registerPushNotifications() {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array('YOUR_PUBLIC_VAPID_KEY') // Replace with your VAPID key
+            });
+
+            // Send subscription to server
+            await fetch(`${API_BASE}/push-subscription`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify(subscription)
+            });
+
+            console.log('Push notification subscription registered');
+        } catch (error) {
+            console.error('Push notification registration failed:', error);
+        }
+    }
+}
+
+// Utility function for VAPID key conversion
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// PWA Install Button Functions
+function showInstallButton() {
+    if (installButton) return;
+
+    installButton = document.createElement('button');
+    installButton.id = 'pwa-install-btn';
+    installButton.className = 'pwa-install-button';
+    installButton.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17,13H13V17H11V13H7V11H11V7H13V11H17M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+        </svg>
+        Install App
+    `;
+    installButton.onclick = installPWA;
+    installButton.setAttribute('aria-label', 'Install VILLEN Music as an app');
+
+    document.body.appendChild(installButton);
+
+    // Add CSS for install button
+    const style = document.createElement('style');
+    style.textContent = `
+        .pwa-install-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff6b35, #ff8f65);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        .pwa-install-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+        }
+        .pwa-install-button svg {
+            width: 20px;
+            height: 20px;
+        }
+        @media (max-width: 768px) {
+            .pwa-install-button {
+                bottom: 15px;
+                right: 15px;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function hideInstallButton() {
+    if (installButton) {
+        installButton.remove();
+        installButton = null;
+    }
+}
+
+async function installPWA() {
+    if (!deferredPrompt) return;
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+
+    // Reset the deferred prompt variable
+    deferredPrompt = null;
+
+    if (outcome === 'accepted') {
+        console.log('User accepted the PWA install prompt');
+        hideInstallButton();
+    } else {
+        console.log('User dismissed the PWA install prompt');
+    }
+}
+
+// Update Notification
+function showUpdateNotification() {
+    const notification = document.createElement('div');
+    notification.className = 'update-notification';
+    notification.innerHTML = `
+        <div class="update-content">
+            <span>🎵 New version available!</span>
+            <button onclick="updateApp()">Update Now</button>
+            <button onclick="dismissUpdate()">Later</button>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Add CSS for update notification
+    const style = document.createElement('style');
+    style.textContent = `
+        .update-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4CAF50, #66BB6A);
+            color: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+        .update-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .update-content button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        .update-content button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .update-notification {
+                top: 15px;
+                right: 15px;
+                left: 15px;
+                padding: 12px;
+            }
+            .update-content {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 10000);
+}
+
+function updateApp() {
+    // Tell service worker to skip waiting
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        });
+    }
+    // Reload the page
+    window.location.reload();
+}
+
+function dismissUpdate() {
+    const notification = document.querySelector('.update-notification');
+    if (notification) {
+        notification.remove();
+    }
+}
+
+// Offline Detection
+window.addEventListener('online', () => {
+    console.log('Back online');
+    showOnlineNotification();
+    // Sync offline actions
+    syncOfflineActions();
+});
+
+window.addEventListener('offline', () => {
+    console.log('Gone offline');
+    showOfflineNotification();
+});
+
+function showOnlineNotification() {
+    showToast('Back online! Syncing your data...', 'success');
+}
+
+function showOfflineNotification() {
+    showToast('You are offline. Some features may be limited.', 'warning');
+}
+
+// Enhanced Toast Function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+
+    const container = document.getElementById('toast-container') || createToastContainer();
+    container.appendChild(toast);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1002;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    `;
+    document.body.appendChild(container);
+    return container;
+}
+
+// Sync Offline Actions
+async function syncOfflineActions() {
+    // Implementation for syncing offline actions when back online
+    console.log('Syncing offline actions...');
+    // This would sync any offline likes, queue changes, etc.
+}
+
+// Initialize PWA features when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Request notification permission on first visit
+    if (Notification.permission === 'default') {
+        setTimeout(() => {
+            requestNotificationPermission();
+        }, 5000); // Wait 5 seconds after page load
+    }
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('App is running in standalone mode');
+    }
+});
