@@ -595,7 +595,7 @@ class DiscoverWeeklyView(APIView):
         return Response(recommendations)
 
 class ChartsView(APIView):
-    permission_classes = [permissions.IsAuthenticated] # Or AllowAny
+    permission_classes = [permissions.AllowAny]
 
     @method_decorator(cache_page(60 * 60 * 4)) # Cache for 4 hours
     def get(self, request):
@@ -604,7 +604,7 @@ class ChartsView(APIView):
 
 class MoodPlaylistView(APIView):
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         mood = request.query_params.get('mood', 'happy')
@@ -621,7 +621,7 @@ class MoodPlaylistView(APIView):
         return Response(results)
 
 class TimeAwarePlaylistView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         import datetime
