@@ -313,7 +313,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             # Frontend cannot access them via JavaScript
             response.data = {
                 'status': 'success',
-                'message': 'Login successful. Tokens set in secure cookies.'
+                'message': 'Login successful.',
+                'access': access_token,
+                'refresh': refresh_token,
             }
         
         return response

@@ -47,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight,
                 ),
-                child: IntrinsicHeight(
+                child: Center( // Centers content vertically when possible
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Form(

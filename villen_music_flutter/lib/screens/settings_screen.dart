@@ -41,6 +41,11 @@ class SettingsScreen extends StatelessWidget {
             'Account',
             [
               ListTile(
+                title: const Text('Username'),
+                subtitle: Text(context.watch<AuthProvider>().username ?? 'Guest'),
+                leading: const Icon(Icons.person),
+              ),
+              ListTile(
                 title: const Text('Logout'),
                 leading: const Icon(Icons.logout),
                 onTap: () => _showLogoutDialog(context),

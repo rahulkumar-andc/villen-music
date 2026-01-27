@@ -31,18 +31,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final auth = context.read<AuthProvider>();
       
-      // Call register (ensure backend/provider support this)
+      // Call register
       final success = await auth.register(
         _usernameController.text.trim(),
         _passwordController.text,
       );
 
       if (success && mounted) {
-        // Navigate to home or login
-        Navigator.pop(context); // Go back to login to login
+        // Auto Login after successful registration
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful! Please login.')),
+           const SnackBar(content: Text('Registration successful! Logging in...')),
         );
+        
+        final loginSuccess = await auth.login(
+          _usernameController.text.trim(),
+          _passwordController.text,
+        );
+
+        if (loginSuccess && mounted) {
+           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        } else {
+           // Fallback if auto-login fails
+           Navigator.pop(context); 
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Please login with your new account.')),
+           );
+        }
       }
     }
   }
