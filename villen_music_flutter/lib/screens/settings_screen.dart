@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:villen_music/providers/auth_provider.dart';
 import 'package:villen_music/providers/audio_provider.dart';
 import 'package:villen_music/core/theme/app_theme.dart';
+import 'package:villen_music/screens/downloads_screen.dart';
+import 'package:villen_music/screens/insights_screen.dart';
+import 'package:villen_music/screens/friends_activity_screen.dart';
+import 'package:villen_music/widgets/sleep_timer_bottom_sheet.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -35,6 +39,58 @@ class SettingsScreen extends StatelessWidget {
                 min: 0.5,
                 max: 10.0,
               ),
+              ListTile(
+                leading: const Icon(Icons.timer),
+                title: const Text('Sleep Timer'),
+                subtitle: const Text('Set a timer to stop playback'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => SleepTimerBottomSheet.show(context),
+              ),
+            ],
+          ),
+          _buildSection(
+            'Storage & Downloads',
+            [
+              ListTile(
+                leading: const Icon(Icons.download),
+                title: const Text('Downloaded Songs'),
+                subtitle: const Text('Manage offline music'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DownloadsScreen()),
+                ),
+              ),
+            ],
+          ),
+          _buildSection(
+            'Social',
+            [
+              ListTile(
+                leading: const Icon(Icons.people),
+                title: const Text('Friends'),
+                subtitle: const Text('See what friends are listening to'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FriendsActivityScreen()),
+                ),
+              ),
+            ],
+          ),
+          _buildSection(
+            'Insights',
+            [
+              ListTile(
+                leading: const Icon(Icons.insights),
+                title: const Text('Your Stats'),
+                subtitle: const Text('Streaks, top artists, listening time'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InsightsScreen()),
+                ),
+              ),
             ],
           ),
           _buildSection(
@@ -56,6 +112,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildSection(String title, List<Widget> children) {
     return Column(

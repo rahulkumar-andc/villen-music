@@ -240,6 +240,47 @@ class JioSaavnService:
         self._set_cache(cache_key, result)
         return result
 
+    def get_synced_lyrics(self, song_id: str) -> Optional[str]:
+        """
+        Get synced LRC format lyrics for karaoke mode.
+        Returns LRC content string or None if not available.
+        """
+        if not self._validate_id(song_id):
+            return None
+
+        cache_key = f"synced_lyrics:{song_id}"
+        cached = self._get_cached(cache_key)
+        if cached:
+            return cached
+
+        # Try to get synced lyrics from API
+        data = self._api_get(f"songs/{song_id}/lyrics")
+        if data and data.get("success"):
+            lyrics_data = data.get("data", {})
+            # Check if we have synced/timed lyrics
+            synced_lyrics = lyrics_data.get("syncedLyrics")
+            if synced_lyrics:
+                self._set_cache(cache_key, synced_lyrics)
+                return synced_lyrics
+            
+            # Try to convert plain lyrics to pseudo-LRC format
+            plain_lyrics = lyrics_data.get("lyrics")
+            if plain_lyrics:
+                # Create simple LRC format (no real timestamps, but shows structure)
+                lines = plain_lyrics.split('\n')
+                lrc_lines = []
+                for i, line in enumerate(lines):
+                    # Generate pseudo-timestamps (every ~3 seconds per line)
+                    minutes = (i * 3) // 60
+                    seconds = (i * 3) % 60
+                    lrc_lines.append(f"[{minutes:02d}:{seconds:02d}.00]{line}")
+                lrc_content = '\n'.join(lrc_lines)
+                self._set_cache(cache_key, lrc_content)
+                return lrc_content
+
+        return None
+
+
     # --------------------
     # ALBUM
     # --------------------

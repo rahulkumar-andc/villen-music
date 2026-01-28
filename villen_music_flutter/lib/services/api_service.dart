@@ -451,6 +451,96 @@ class ApiService {
     }
   }
 
+  // --- NEW: Friends & Social ---
+
+  Future<List<dynamic>> getFriends() async {
+    try {
+      final response = await _dio.get('friends/');
+      return response.data;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<bool> followUser(String username) async {
+    try {
+      await _dio.post('friends/', data: {'username': username});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> unfollowUser(String username) async {
+    try {
+      await _dio.delete('friends/', data: {'username': username});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> updateNowPlaying(Song song) async {
+    try {
+      await _dio.post('user/now-playing/', data: {
+        'song_id': song.id,
+        'title': song.title,
+        'artist': song.artist,
+        'image': song.image,
+      });
+    } catch (e) {
+      debugPrint('Failed to update now playing: $e');
+    }
+  }
+
+  Future<void> clearNowPlaying() async {
+    try {
+      await _dio.delete('user/now-playing/');
+    } catch (e) {
+      debugPrint('Failed to clear now playing: $e');
+    }
+  }
+
+  // --- NEW: Synced Lyrics ---
+
+  Future<Map<String, dynamic>?> getSyncedLyrics(String songId) async {
+    try {
+      final response = await _dio.get('song/$songId/lyrics/synced/');
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // --- NEW: Enhanced Insights ---
+
+  Future<Map<String, dynamic>?> getWrappedInsights() async {
+    try {
+      final response = await _dio.get('user/insights/wrapped/');
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getTopArtists() async {
+    try {
+      final response = await _dio.get('user/insights/top-artists/');
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStreak() async {
+    try {
+      final response = await _dio.get('user/streak/');
+      return response.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
   String _getErrorMessage(DioException e) {
 
 
@@ -469,3 +559,4 @@ class ApiService {
     }
   }
 }
+

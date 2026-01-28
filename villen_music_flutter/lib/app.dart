@@ -17,6 +17,10 @@ import 'package:villen_music/screens/search_screen.dart';
 import 'package:villen_music/screens/splash_screen.dart';
 import 'package:villen_music/screens/equalizer_screen.dart';
 import 'package:villen_music/screens/profile_screen.dart';
+// New screens
+import 'package:villen_music/screens/insights_screen.dart';
+import 'package:villen_music/screens/friends_activity_screen.dart';
+import 'package:villen_music/screens/downloads_screen.dart';
 
 
 class VillenApp extends StatelessWidget {
@@ -43,6 +47,10 @@ class VillenApp extends StatelessWidget {
         '/recent': (context) => const RecentlyPlayedScreen(),
         '/equalizer': (context) => const EqualizerScreen(),
         '/profile': (context) => const ProfileScreen(),
+        // New routes
+        '/insights': (context) => const InsightsScreen(),
+        '/friends': (context) => const FriendsActivityScreen(),
+        '/downloads': (context) => const DownloadsScreen(),
       },
 
     );

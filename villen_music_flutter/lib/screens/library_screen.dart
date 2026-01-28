@@ -41,7 +41,7 @@ class LibraryScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
-              // Quick Access Cards
+              // Quick Access Cards - Row 1
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -68,6 +68,37 @@ class LibraryScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              
+              const SizedBox(height: 12),
+              
+              // Quick Access Cards - Row 2 (NEW)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _QuickAccessCard(
+                        icon: Icons.insights_rounded,
+                        title: 'Insights',
+                        subtitle: 'Your stats',
+                        color: Colors.green,
+                        onTap: () => Navigator.pushNamed(context, '/insights'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _QuickAccessCard(
+                        icon: Icons.people_rounded,
+                        title: 'Friends',
+                        subtitle: 'Activity',
+                        color: Colors.blue,
+                        onTap: () => Navigator.pushNamed(context, '/friends'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               
               const SizedBox(height: 24),
               

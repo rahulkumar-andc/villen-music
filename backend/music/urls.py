@@ -15,6 +15,7 @@ urlpatterns = [
     path("stream/<str:song_id>/", views.stream_song, name="stream_song"),
     path("song/<str:song_id>/", views.song_details, name="song_details"),
     path("song/<str:song_id>/lyrics/", views.song_lyrics, name="song_lyrics"),
+    path("song/<str:song_id>/lyrics/synced/", views.SyncedLyricsView.as_view(), name="synced_lyrics"),
     path("song/<str:song_id>/related/", views.song_related, name="song_related"),
     
     # Album & Artist
@@ -34,10 +35,15 @@ urlpatterns = [
     path("auth/logout/", views.LogoutView.as_view(), name="logout"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),  # FIX #13
 
-    # Social Features
+    # Social Features - Artists
     path("user/profile/", views.UserProfileView.as_view(), name="user_profile"),
     path("user/following/", views.FollowArtistView.as_view(), name="user_following"),
     path("user/activity/", views.ActivityFeedView.as_view(), name="user_activity"),
+    
+    # Social Features - Friends (NEW)
+    path("friends/", views.FriendsView.as_view(), name="friends"),
+    path("friends/activity/", views.FriendsActivityView.as_view(), name="friends_activity"),
+    path("user/now-playing/", views.CurrentlyPlayingUpdateView.as_view(), name="now_playing"),
     
     # Personalization
     path("history/record/", views.RecordHistoryView.as_view(), name="record_history"),
@@ -46,9 +52,11 @@ urlpatterns = [
     path("browse/charts/", views.ChartsView.as_view(), name="browse_charts"),
     path("discover/mood/", views.MoodPlaylistView.as_view(), name="mood_playlist"),
     path("discover/artists/suggested/", views.SuggestedArtistsView.as_view(), name="suggested_artists"),
-
     path("discover/time/", views.TimeAwarePlaylistView.as_view(), name="time_playlist"),
+    
+    # Enhanced Insights (NEW)
     path("user/insights/", views.UserInsightsView.as_view(), name="user_insights"),
+    path("user/insights/wrapped/", views.WrappedInsightsView.as_view(), name="wrapped_insights"),
+    path("user/insights/top-artists/", views.TopArtistsView.as_view(), name="top_artists"),
+    path("user/streak/", views.StreakView.as_view(), name="streak"),
 ] + router.urls
-
-

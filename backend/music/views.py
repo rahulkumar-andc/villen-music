@@ -747,4 +747,259 @@ class UserInsightsView(APIView):
         })
 
 
+# =============================================================================
+# NEW FEATURES - Friends, Currently Playing, Synced Lyrics, Enhanced Insights
+# =============================================================================
+
+from .models import FriendFollow, CurrentlyPlaying, SyncedLyrics, ListeningStreak, MonthlyStats
+from .serializers.social_serializers import (
+    FriendSerializer, CurrentlyPlayingSerializer, 
+    ListeningStreakSerializer, MonthlyStatsSerializer
+)
+
+
+class FriendsView(APIView):
+    """Manage friend relationships - follow/unfollow other users."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get list of friends the user is following."""
+        friends = FriendFollow.objects.filter(follower=request.user).select_related(
+            'following', 'following__profile'
+        ).order_by('-created_at')
+        serializer = FriendSerializer(friends, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Follow a user by username."""
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "username required"}, status=400)
+        
+        # Cannot follow yourself
+        if username == request.user.username:
+            return Response({"error": "Cannot follow yourself"}, status=400)
+        
+        try:
+            user_to_follow = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        
+        # Check if already following
+        if FriendFollow.objects.filter(follower=request.user, following=user_to_follow).exists():
+            return Response({"status": "already_following"}, status=200)
+        
+        FriendFollow.objects.create(follower=request.user, following=user_to_follow)
+        
+        # Log activity
+        Activity.objects.create(
+            user=request.user,
+            action_type='FOLLOW',
+            target_id=str(user_to_follow.id),
+            description=f"started following {username}"
+        )
+        
+        return Response({"status": "following", "username": username}, status=201)
+
+    def delete(self, request):
+        """Unfollow a user."""
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "username required"}, status=400)
+        
+        try:
+            user_to_unfollow = User.objects.get(username=username)
+            FriendFollow.objects.filter(follower=request.user, following=user_to_unfollow).delete()
+            return Response({"status": "unfollowed"}, status=200)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+
+class FriendsActivityView(APIView):
+    """Get real-time activity feed of friends."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get currently playing songs of friends."""
+        # Get friends
+        friend_ids = FriendFollow.objects.filter(
+            follower=request.user
+        ).values_list('following_id', flat=True)
+        
+        # Get their currently playing status
+        playing = CurrentlyPlaying.objects.filter(
+            user_id__in=friend_ids,
+            is_playing=True
+        ).select_related('user', 'user__profile')
+        
+        serializer = CurrentlyPlayingSerializer(playing, many=True)
+        return Response(serializer.data)
+
+
+class CurrentlyPlayingUpdateView(APIView):
+    """Update what the user is currently playing."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """Update currently playing status."""
+        song_id = request.data.get('song_id')
+        if not song_id:
+            return Response({"error": "song_id required"}, status=400)
+        
+        CurrentlyPlaying.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'song_id': song_id,
+                'title': request.data.get('title', 'Unknown'),
+                'artist': request.data.get('artist', 'Unknown'),
+                'image': request.data.get('image', ''),
+                'is_playing': True,
+            }
+        )
+        return Response({"status": "updated"})
+
+    def delete(self, request):
+        """Clear currently playing (paused/stopped)."""
+        CurrentlyPlaying.objects.filter(user=request.user).update(is_playing=False)
+        return Response({"status": "cleared"})
+
+
+class SyncedLyricsView(APIView):
+    """Get synced LRC lyrics for karaoke mode."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, song_id):
+        """Get synced lyrics in LRC format."""
+        try:
+            lyrics = SyncedLyrics.objects.get(song_id=song_id)
+            return Response({
+                "song_id": song_id,
+                "lrc": lyrics.lrc_content,
+                "source": lyrics.source,
+            })
+        except SyncedLyrics.DoesNotExist:
+            # Try to fetch from upstream and cache
+            lrc_content = service.get_synced_lyrics(song_id)
+            if lrc_content:
+                lyrics = SyncedLyrics.objects.create(
+                    song_id=song_id,
+                    lrc_content=lrc_content
+                )
+                return Response({
+                    "song_id": song_id,
+                    "lrc": lrc_content,
+                    "source": "jiosaavn",
+                })
+            return Response({"error": "Synced lyrics not available"}, status=404)
+
+
+class StreakView(APIView):
+    """Get and update user's listening streak."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get current streak info."""
+        streak, created = ListeningStreak.objects.get_or_create(user=request.user)
+        serializer = ListeningStreakSerializer(streak)
+        return Response(serializer.data)
+
+
+class WrappedInsightsView(APIView):
+    """Spotify Wrapped-style listening statistics."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    @method_decorator(cache_page(60 * 60))  # Cache for 1 hour
+    def get(self, request):
+        """Get comprehensive wrapped-style stats."""
+        user = request.user
+        from django.utils import timezone
+        from django.db.models import Count
+        from collections import Counter
+        
+        now = timezone.now()
+        
+        # Try to get cached monthly stats
+        try:
+            monthly = MonthlyStats.objects.get(
+                user=user, 
+                year=now.year, 
+                month=now.month
+            )
+            return Response(MonthlyStatsSerializer(monthly).data)
+        except MonthlyStats.DoesNotExist:
+            pass
+        
+        # Compute fresh stats
+        history = PlaybackHistory.objects.filter(user=user)
+        total_songs = history.count()
+        
+        # Top artists (from history)
+        artist_counts = Counter(history.values_list('artist', flat=True))
+        top_artists = [
+            {"name": name, "count": count}
+            for name, count in artist_counts.most_common(10)
+            if name  # Exclude empty
+        ]
+        
+        # Top songs
+        song_counts = history.values('song_id', 'title', 'artist').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]
+        top_songs = list(song_counts)
+        
+        # Hourly distribution
+        hourly = [0] * 24
+        for ts in history.values_list('listened_at', flat=True):
+            hourly[ts.hour] += 1
+        
+        # Streak info
+        streak, _ = ListeningStreak.objects.get_or_create(user=user)
+        
+        # Total minutes (estimate: avg 3 min per song or use stored duration)
+        total_minutes = sum(h.duration for h in history.select_related()) // 60 if history.exists() else total_songs * 3
+        
+        return Response({
+            "year": now.year,
+            "month": now.month,
+            "total_minutes": total_minutes,
+            "total_songs": total_songs,
+            "unique_artists": len(artist_counts),
+            "top_songs": top_songs,
+            "top_artists": top_artists,
+            "hourly_distribution": hourly,
+            "streak": {
+                "current": streak.current_streak,
+                "longest": streak.longest_streak,
+                "total_days": streak.total_days_listened,
+            }
+        })
+
+
+class TopArtistsView(APIView):
+    """Get top artists for the current month."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get top 10 artists this month."""
+        from django.utils import timezone
+        from collections import Counter
+        
+        now = timezone.now()
+        history = PlaybackHistory.objects.filter(
+            user=request.user,
+            listened_at__year=now.year,
+            listened_at__month=now.month
+        )
+        
+        artist_counts = Counter(history.values_list('artist', flat=True))
+        top_artists = [
+            {"name": name, "count": count, "rank": i + 1}
+            for i, (name, count) in enumerate(artist_counts.most_common(10))
+            if name
+        ]
+        
+        return Response({
+            "month": now.strftime("%B %Y"),
+            "artists": top_artists
+        })
 

@@ -239,6 +239,34 @@ class StorageService {
     await _prefs.remove('search_history');
   }
 
+  // --- Synced Lyrics Cache ---
+
+  Future<void> saveSyncedLyrics(String songId, String lrc) async {
+    await _prefs.setString('synced_lyrics_$songId', lrc);
+  }
+
+  Future<String?> getSyncedLyrics(String songId) async {
+    return _prefs.getString('synced_lyrics_$songId');
+  }
+
+  // --- Crossfade Settings ---
+
+  Future<void> setCrossfadeEnabled(bool enabled) async {
+    await _prefs.setBool('crossfade_enabled', enabled);
+  }
+
+  bool getCrossfadeEnabled() {
+    return _prefs.getBool('crossfade_enabled') ?? false;
+  }
+
+  Future<void> setCrossfadeDuration(double seconds) async {
+    await _prefs.setDouble('crossfade_duration', seconds);
+  }
+
+  double getCrossfadeDuration() {
+    return _prefs.getDouble('crossfade_duration') ?? 5.0;
+  }
+
   // --- Clear All ---
   
   Future<void> clearAll() async {

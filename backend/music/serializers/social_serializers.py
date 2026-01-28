@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from music.models import UserProfile, FollowedArtist, Playlist, PlaylistSong, Activity
+from music.models import (
+    UserProfile, FollowedArtist, Playlist, PlaylistSong, Activity,
+    FriendFollow, CurrentlyPlaying, ListeningStreak, MonthlyStats
+)
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
@@ -48,3 +51,62 @@ class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = ['id', 'username', 'user_avatar', 'action_type', 'target_id', 'description', 'created_at']
+
+
+# =============================================================================
+# NEW SERIALIZERS - Social Features & Insights
+# =============================================================================
+
+class FriendSerializer(serializers.ModelSerializer):
+    """Serializer for friend relationships."""
+    username = serializers.CharField(source='following.username', read_only=True)
+    avatar_url = serializers.SerializerMethodField()
+    currently_playing = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FriendFollow
+        fields = ['id', 'username', 'avatar_url', 'currently_playing', 'created_at']
+
+    def get_avatar_url(self, obj):
+        try:
+            return obj.following.profile.avatar_url
+        except:
+            return None
+
+    def get_currently_playing(self, obj):
+        try:
+            playing = obj.following.currently_playing
+            if playing and playing.is_playing:
+                return {
+                    'song_id': playing.song_id,
+                    'title': playing.title,
+                    'artist': playing.artist,
+                    'image': playing.image,
+                }
+        except CurrentlyPlaying.DoesNotExist:
+            pass
+        return None
+
+
+class CurrentlyPlayingSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = CurrentlyPlaying
+        fields = ['song_id', 'title', 'artist', 'image', 'is_playing', 'started_at', 'username']
+        read_only_fields = ['started_at', 'username']
+
+
+class ListeningStreakSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ListeningStreak
+        fields = ['current_streak', 'longest_streak', 'last_listen_date', 'total_days_listened']
+
+
+class MonthlyStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MonthlyStats
+        fields = [
+            'year', 'month', 'total_minutes', 'total_songs', 'unique_artists',
+            'top_songs', 'top_artists', 'genre_distribution', 'hourly_distribution'
+        ]

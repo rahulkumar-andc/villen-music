@@ -6,8 +6,10 @@
     :root {
         --villen-bg: #121212;
         --villen-card: #181818;
-        --villen-primary: #8b5cf6; /* Violet/Purple */
-        --villen-secondary: #03dac6; /* Teal accent */
+        --villen-primary: #8b5cf6;
+        /* Violet/Purple */
+        --villen-secondary: #03dac6;
+        /* Teal accent */
         --text-primary: #ffffff;
         --text-secondary: #b3b3b3;
     }
@@ -65,13 +67,16 @@
 
     .stat-bodge {
         font-size: 12px;
-        color: #ef4444; /* Red for down trend mock */
+        color: #ef4444;
+        /* Red for down trend mock */
         display: flex;
         align-items: center;
         margin-top: 4px;
     }
-    
-    .stat-badge-up { color: #10b981; }
+
+    .stat-badge-up {
+        color: #10b981;
+    }
 
     /* Main Chart Section */
     .chart-section {
@@ -86,14 +91,14 @@
         border-radius: 12px;
         height: 400px;
     }
-    
+
     .chart-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
     }
-    
+
     .top-song-card {
         background: linear-gradient(135deg, #4c1d95 0%, #2e1065 100%);
         padding: 0;
@@ -103,24 +108,38 @@
         display: flex;
         flex-direction: column;
     }
-    
+
     .top-song-image {
         width: 100%;
         height: 60%;
         object-fit: cover;
         opacity: 0.8;
     }
-    
+
     .top-song-info {
         padding: 20px;
-        background: rgba(0,0,0,0.3);
+        background: rgba(0, 0, 0, 0.3);
         flex-grow: 1;
         backdrop-filter: blur(10px);
     }
 
-    h2 { font-size: 24px; margin: 0; }
-    h3 { font-size: 18px; color: var(--text-secondary); margin: 0 0 5px 0; font-weight: 500;}
-    h4 { font-size: 14px; color: var(--text-secondary); opacity: 0.7;}
+    h2 {
+        font-size: 24px;
+        margin: 0;
+    }
+
+    h3 {
+        font-size: 18px;
+        color: var(--text-secondary);
+        margin: 0 0 5px 0;
+        font-weight: 500;
+    }
+
+    h4 {
+        font-size: 14px;
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
 
     /* Branding */
     .villen-brand {
@@ -133,14 +152,13 @@
         font-weight: bold;
         font-size: 18px;
     }
-    
+
     .villen-logo {
         width: 30px;
         height: 30px;
         background: var(--villen-primary);
         border-radius: 50%;
     }
-
 </style>
 
 <!-- Dashboard Overlay -->
@@ -148,20 +166,26 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 16px;">
             {% if original.avatar_url %}
-            <img src="{{ original.avatar_url }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--villen-primary);">
+            <img src="{{ original.avatar_url }}"
+                style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--villen-primary);">
             {% else %}
-            <div style="width: 60px; height: 60px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center;">
+            <div
+                style="width: 60px; height: 60px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center;">
                 <span style="font-size: 24px;">👤</span>
             </div>
             {% endif %}
             <div>
                 <h1 style="margin: 0; font-size: 32px; color: white;">{{ original.user.username }}</h1>
-                <span style="color: var(--text-secondary); text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">User Analytics • 2026</span>
+                <span
+                    style="color: var(--text-secondary); text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">User
+                    Analytics • 2026</span>
             </div>
         </div>
         <div style="display: flex; gap: 10px;">
-             <!-- Year toggles could go here -->
-             <span style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 12px;">Year 2026</span>
+            <!-- Year toggles could go here -->
+            <span
+                style="padding: 6px 12px; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 12px;">Year
+                2026</span>
         </div>
     </div>
 
@@ -196,10 +220,10 @@
                 <span>↑ 8.2%</span>
             </div>
         </div>
-        
+
         <!-- Playlists -->
         <div class="stat-card">
-             <div class="stat-icon">📂</div>
+            <div class="stat-icon">📂</div>
             <div class="stat-value">{{ analytics.playlist_count }}</div>
             <div class="stat-label">Playlists Created</div>
         </div>
@@ -220,34 +244,40 @@
         <!-- Top Streamed Card -->
         <div class="top-song-card">
             {% if analytics.top_song %}
-                {% if analytics.top_song.image %}
-                    <img src="{{ analytics.top_song.image }}" class="top-song-image">
-                {% else %}
-                     <div class="top-song-image" style="background: #333; display: flex; align-items: center; justify-content: center;">
-                        <span style="font-size: 48px;">🎵</span>
-                     </div>
-                {% endif %}
-                <div class="top-song-info">
-                    <div style="font-size: 12px; color: #d8b4fe; margin-bottom: 8px; text-transform: uppercase; font-weight: bold;">Most Streamed Track</div>
-                    <div style="font-size: 24px; font-weight: bold; margin-bottom: 4px; line-height: 1.2;">{{ analytics.top_song.title }}</div>
-                    <div style="font-size: 16px; opacity: 0.8;">{{ analytics.top_song.artist }}</div>
-                    
-                    <div style="margin-top: 24px; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 16px;">
-                        <div>
-                            <div style="font-size: 20px; font-weight: bold;">{{ analytics.top_song_count }}</div>
-                            <div style="font-size: 12px; opacity: 0.6;">Total Plays</div>
-                        </div>
-                        <div>
-                             <div style="font-size: 20px; font-weight: bold;">#1</div>
-                             <div style="font-size: 12px; opacity: 0.6;">Rank</div>
-                        </div>
+            {% if analytics.top_song.image %}
+            <img src="{{ analytics.top_song.image }}" class="top-song-image">
+            {% else %}
+            <div class="top-song-image"
+                style="background: #333; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 48px;">🎵</span>
+            </div>
+            {% endif %}
+            <div class="top-song-info">
+                <div
+                    style="font-size: 12px; color: #d8b4fe; margin-bottom: 8px; text-transform: uppercase; font-weight: bold;">
+                    Most Streamed Track</div>
+                <div style="font-size: 24px; font-weight: bold; margin-bottom: 4px; line-height: 1.2;">{{
+                    analytics.top_song.title }}</div>
+                <div style="font-size: 16px; opacity: 0.8;">{{ analytics.top_song.artist }}</div>
+
+                <div
+                    style="margin-top: 24px; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 16px;">
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold;">{{ analytics.top_song_count }}</div>
+                        <div style="font-size: 12px; opacity: 0.6;">Total Plays</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold;">#1</div>
+                        <div style="font-size: 12px; opacity: 0.6;">Rank</div>
                     </div>
                 </div>
+            </div>
             {% else %}
-                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
-                    <span style="font-size: 40px; margin-bottom: 10px;">📉</span>
-                    <div>No streaming data yet</div>
-                 </div>
+            <div
+                style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
+                <span style="font-size: 40px; margin-bottom: 10px;">📉</span>
+                <div>No streaming data yet</div>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -264,12 +294,14 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('activityChart').getContext('2d');
-    
-    // Mock data based on analytics (or passed from view)
-    // We will inject the real data via Django template tags into JS
-    const monthlyData = {{ analytics.monthly_activity|safe }};
+    /* eslint-disable */
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('activityChart').getContext('2d');
+
+        // Mock data based on analytics (or passed from view)
+        // We will inject the real data via Django template tags into JS
+        const monthlyData = {{ analytics.monthly_activity| safe
+    }};
     const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // Gradient
